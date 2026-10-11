@@ -1,0 +1,87 @@
+name: Build engine
+
+# Every push and pull request builds the engine and runs the smoke test.
+# Pushing a tag "wine-<version>-r<revision>" (matching versions.env) also publishes a release.
+on:
+  push:
+    branches: [main]
+    tags: ['wine-*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  llvm:
+    runs-on: macos-15
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versão do LLVM
+        run: grep '^LLVM_COMMIT=' versions.env >> "$GITHUB_ENV"
+      - name: Cache do LLVM
+        id: cache
+        uses: actions/cache/restore@v4
+        with:
+          path: work/llvm-darwin
+          key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
+          lookup-only: true
+      - name: Ferramentas
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: brew install ninja
+      - name: Compilar o LLVM 15 (x86_64)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: ./scripts/build-llvm.sh
+      - name: Guardar o LLVM
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: work/llvm-darwin
+          key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
+
+  engine:
+    needs: llvm
+    runs-on: macos-15
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versões
+        run: grep -E '^(LLVM_COMMIT|ENGINE_REVISION|WINE_VERSION)=' versions.env >> "$GITHUB_ENV"
+      - name: Rosetta 2
+        run: /usr/sbin/softwareupdate --install-rosetta --agree-to-license || true
+      - name: Ferramentas
+        run: brew install mingw-w64 bison meson ninja
+      - name: Restaurar o LLVM
+        uses: actions/cache/restore@v4
+        with:
+          path: work/llvm-darwin
+          key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
+          fail-on-cache-miss: true
+      - name: Wine (winemac.so com o patch do DXMT)
+        run: ./scripts/build-wine.sh
+      - name: DXMT
+        run: ./scripts/build-dxmt.sh
+      - name: cabextract
+        run: ./scripts/build-cabextract.sh
+      - name: Empacotar
+        run: ./scripts/package.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: winhub-engine-${{ github.sha }}
+          path: work/dist
+      - name: Teste de fumaça (D3D11 via DXMT)
+        run: ./scripts/smoke-test.sh
+      - name: Publicar release
+        if: startsWith(github.ref, 'refs/tags/wine-')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          expected="wine-${WINE_VERSION}-r${ENGINE_REVISION}"
+          if [ "$GITHUB_REF_NAME" != "$expected" ]; then
+            echo "A tag $GITHUB_REF_NAME não bate com versions.env ($expected)." >&2
+            exit 1
+          fi
+          gh release create "$GITHUB_REF_NAME" work/dist/* \
+            --title "Wine $WINE_VERSION + WinHub r$ENGINE_REVISION" \
+            --notes-file work/dist/winhub-manifests.json
