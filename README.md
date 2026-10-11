@@ -52,6 +52,10 @@ Os arquivos intermediários ficam em `work/` (fora do Git). Use `WORK=/outro/lug
 2. Faça o push de uma tag `wine-<WINE_VERSION>-r<ENGINE_REVISION>`, por exemplo `wine-11.18-r1`.
 3. O CI compila, testa e cria a release com os arquivos e o `winhub-manifests.json`.
 
+## Planejado
+
+- Sincronização rápida (msync) para o Wine 11: [docs/msync-plan.md](docs/msync-plan.md).
+
 ## Regras
 
 - Só fontes abertas e públicas: WineHQ, DXMT, cabextract, LLVM. Nada de produtos comerciais (sala
