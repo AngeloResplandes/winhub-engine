@@ -17,12 +17,12 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 240
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Versão do LLVM
         run: grep '^LLVM_COMMIT=' versions.env >> "$GITHUB_ENV"
       - name: Cache do LLVM
         id: cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: work/llvm-darwin
           key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
@@ -35,7 +35,7 @@ jobs:
         run: ./scripts/build-llvm.sh
       - name: Guardar o LLVM
         if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: work/llvm-darwin
           key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
@@ -45,7 +45,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Versões
         run: grep -E '^(LLVM_COMMIT|ENGINE_REVISION|WINE_VERSION)=' versions.env >> "$GITHUB_ENV"
       - name: Rosetta 2
@@ -53,7 +53,7 @@ jobs:
       - name: Ferramentas
         run: brew install mingw-w64 bison meson ninja
       - name: Restaurar o LLVM
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: work/llvm-darwin
           key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
@@ -66,7 +66,7 @@ jobs:
         run: ./scripts/build-cabextract.sh
       - name: Empacotar
         run: ./scripts/package.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: winhub-engine-${{ github.sha }}
           path: work/dist
