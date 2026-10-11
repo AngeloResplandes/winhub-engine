@@ -27,6 +27,8 @@ Conteúdo do overlay:
   [DXMT](https://github.com/3Shain/dxmt), compilados como DLLs "nativas" (`wine_builtin_dll=false`). O
   WinHub as copia para a garrafa (ou para a pasta de um jogo) só quando o DXMT é escolhido. Com as DLLs
   fora da garrafa, nada muda em relação ao Wine oficial.
+  O código é o da tag fixada, com as correções de `patches/dxmt/` (trazidas do próprio DXMT) para
+  compilar com o mingw-w64 atual.
 
 ## Como compilar
 
@@ -55,5 +57,5 @@ Os arquivos intermediários ficam em `work/` (fora do Git). Use `WORK=/outro/lug
 - Só fontes abertas e públicas: WineHQ, DXMT, cabextract, LLVM. Nada de produtos comerciais (sala
   limpa, como no WinHub). O D3DMetal da Apple não é usado nem redistribuído.
 - Nenhum binário no Git.
-- Licenças: scripts sob MIT ([LICENSE](LICENSE)); patches do Wine sob LGPL-2.1, como o Wine; demais
+- Licenças: scripts sob MIT ([LICENSE](LICENSE)); patches do Wine sob LGPL-2.1, como o Wine; patches do DXMT sob a licença do DXMT; demais
   componentes em [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

@@ -1,0 +1,64 @@
+From 9b1820a6b5f1e999da1dcfb66d60c802e47243c5 Mon Sep 17 00:00:00 2001
+From: Angelo Resplandes <154464565+AngeloResplandes@users.noreply.github.com>
+Date: Sun, 11 Oct 2026 16:49:46 -0300
+Subject: [PATCH] Add missing standard headers
+
+Backport of upstream DXMT commits 75bd4da5d1, 04d43e63de and e67727f28f, needed by newer mingw-w64 (GCC 15) and libc++.
+---
+ include/ftl.hpp                   | 1 +
+ src/airconv/dxbc_instructions.hpp | 1 +
+ src/util/com/com_guid.cpp         | 1 +
+ src/util/sha1/sha1_util.hpp       | 1 +
+ 4 files changed, 4 insertions(+)
+
+diff --git a/include/ftl.hpp b/include/ftl.hpp
+index c20f48f..63ecef2 100644
+--- a/include/ftl.hpp
++++ b/include/ftl.hpp
+@@ -3,6 +3,7 @@
+ #include <utility>
+ #include <vector>
+ #include <algorithm>
++#include <iterator>
+ 
+ template <class Tp, typename Func>
+ auto operator | (const std::vector<Tp> &vec, Func &&f)  {
+diff --git a/src/airconv/dxbc_instructions.hpp b/src/airconv/dxbc_instructions.hpp
+index 172375e..62c22b4 100644
+--- a/src/airconv/dxbc_instructions.hpp
++++ b/src/airconv/dxbc_instructions.hpp
+@@ -3,6 +3,7 @@
+ #include "shader_common.hpp"
+ #include <array>
+ #include <map>
++#include <string>
+ #include <string_view>
+ #include <variant>
+ #include "packed_variant_list.hpp"
+diff --git a/src/util/com/com_guid.cpp b/src/util/com/com_guid.cpp
+index 11bf4a7..05bda6c 100644
+--- a/src/util/com/com_guid.cpp
++++ b/src/util/com/com_guid.cpp
+@@ -8,6 +8,7 @@
+  * See <https://github.com/doitsujin/dxvk/blob/master/LICENSE>
+  */
+ 
++#include <iomanip>
+ #include <mutex>
+ #include <unordered_set>
+ 
+diff --git a/src/util/sha1/sha1_util.hpp b/src/util/sha1/sha1_util.hpp
+index 8197c5e..c933ee4 100644
+--- a/src/util/sha1/sha1_util.hpp
++++ b/src/util/sha1/sha1_util.hpp
+@@ -13,6 +13,7 @@
+ #include <cstdint>
+ #include <cstring>
+ #include <string>
++#include <functional>
+ #include "./sha1.h"
+ 
+ namespace dxmt {
+-- 
+2.54.0 (Apple Git-157)
+
