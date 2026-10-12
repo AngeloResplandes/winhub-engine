@@ -1,0 +1,50 @@
+[English](../decisions.md) · **Português (Brasil)**
+
+# Decisões
+
+Registro datado das decisões que deram forma ao motor, das mais novas para as mais antigas.
+
+## 2026-10-12: A documentação descreve a engenharia reversa abertamente
+
+O projeto documenta o que foi estudado no CrossOver e como isso é reproduzido, no estilo de outras
+reimplementações em "sala limpa". Código descompilado, endereços, nomes de símbolos internos e logs da análise
+ficam fora do repositório. Veja [Engenharia reversa](reverse-engineering.md).
+
+## 2026-10-12: Manter o nome de usuário, o perfil e o Desktop do Wine oficial
+
+A árvore da CodeWeavers diz que todo usuário se chama `crossover`. Uma garrafa do WinHub feita com o Wine oficial
+perdeu o login salvo da Steam ao rodar no motor, porque o Wine criou um perfil novo `C:\users\crossover`. O
+`patches/wine/0003` volta ao comportamento do Wine oficial.
+
+## 2026-10-12: O banco de regras é assinado com Ed25519
+
+O WinHub baixa o `data/compatdb.json` da `main` e só o instala quando a assinatura confere com a chave pública
+embutida no app e quando ele é mais novo que o instalado. A chave privada nunca entra no repositório. Veja
+[SECURITY](https://github.com/AngeloResplandes/winhub-engine/blob/main/SECURITY.pt-BR.md).
+
+## 2026-10-12: DXVK só em processos de 64 bits
+
+Processos de 32 bits criam os buffers do Vulkan com memória do host, que o MoltenVK recusa (o da CodeWeavers
+também). O `winhubcompat` considera o DXVK inutilizável nesses processos, que caem no DXMT.
+
+## 2026-10-11: Compilar o Wine das fontes LGPL do CrossOver (revisão 2)
+
+A revisão 1 era o pacote oficial do WineHQ com um `winemac.so` modificado. A revisão 2 compila o Wine inteiro do
+`crossover-sources-26.3.0`, que já tem msync, WoW64 e os ganchos do `winemac.drv` que o DXMT e o D3DMetal
+precisam, e mantém o pacote oficial só como base de bibliotecas, wine-mono e wine-gecko. Usar código que a
+CodeWeavers publica sob a LGPL é permitido; as partes fechadas dela não são usadas.
+
+## 2026-10-11: Escolher o backend dentro do motor
+
+Em vez de copiar o DXMT ou o DXVK para cada garrafa (revisão 1, como o CrossOver fazia até a versão 24), o
+`winhubcompat` põe a pasta do backend escolhido no começo do caminho de DLLs do Wine, por processo. As garrafas
+ficam limpas e um jogo pode ter backend próprio por uma regra.
+
+## 2026-10-11: D3DMetal só do usuário
+
+A licença da Apple não permite redistribuir o D3DMetal. O motor o suporta quando o usuário aponta para o WinHub
+o próprio Game Porting Toolkit; o projeto nunca o distribui nem o baixa.
+
+## 2026-10-11: DXMT v0.80
+
+A última versão do DXMT sob licença MIT; as seguintes são LGPL.

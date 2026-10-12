@@ -1,78 +1,77 @@
-# winhubcompat: backend gráfico e regras por jogo
+**English** · [Português (Brasil)](pt-BR/compatdb.md)
 
-O `winhubcompat.so` (código em [`src/winhubcompat`](../src/winhubcompat)) é carregado pelo `ntdll.so` em
-todo processo do Wine, logo depois do `ntdll.dll` e antes de qualquer outra DLL (patch
-[`0001`](../patches/wine)). Ele:
+# winhubcompat and compatibility rules
 
-1. lê as regras de compatibilidade;
-2. aplica, no próprio processo, os overrides de DLL e as variáveis de ambiente da regra que casar;
-3. escolhe o Direct3D e põe a pasta dele **no começo** do caminho de DLLs do Wine. Nada é copiado
-   para a garrafa;
-4. aplica variáveis de ambiente e acréscimos de linha de comando aos processos-filho
-   (via `NtCreateUserProcess`).
+`winhubcompat.so` (source in [`src/winhubcompat`](https://github.com/AngeloResplandes/winhub-engine/tree/main/src/winhubcompat))
+is loaded by `ntdll.so` in every Wine process, right after `ntdll.dll` and before any other DLL
+([`patches/wine/0001`](patches.md#wine)). It:
 
-## Variáveis de ambiente
+1. reads the compatibility rules;
+2. applies the matching rule's DLL overrides and environment variables to the process itself;
+3. picks the Direct3D backend and puts its folder **first** in Wine's DLL search path; nothing is copied
+   into the bottle;
+4. applies environment variables and command-line additions to child processes (through
+   `NtCreateUserProcess`);
+5. with D3DMetal, sends DLSS's `nvngx.dll` to D3DMetal's own copy.
 
-| Variável | Quem define | Para quê |
+## Environment variables
+
+| Variable | Set by | Purpose |
 |---|---|---|
-| `WINHUB_GRAPHICS_BACKEND` | WinHub (garrafa) | `auto` (padrão), `wined3d`, `dxmt`, `dxvk` ou `d3dmetal`. |
-| `WINHUB_D3DMETAL_DIR` | WinHub | Pasta `lib` do Game Porting Toolkit da Apple instalado pelo usuário (com `wine/` e `external/`). O motor nunca traz o D3DMetal. |
-| `CX_APPLEGPTK_LIBD3DSHARED_PATH` | WinHub | `<WINHUB_D3DMETAL_DIR>/external/libd3dshared.dylib`; lido pelo `ntdll` da árvore da CodeWeavers. |
-| `WINHUB_HOME` | WinHub | Pasta de dados do WinHub; o banco baixado fica em `compat/compatdb.json`. |
-| `WINHUB_COMPAT_RULES` | WinHub | Arquivo com as regras da garrafa (ex.: o Direct3D escolhido para um jogo). |
-| `WINHUB_ACTIVE_GRAPHICS_BACKEND`, `CX_ACTIVE_GRAPHICS_BACKEND` | winhubcompat | O backend escolhido. O segundo é lido pelo `win32u` da CodeWeavers. |
+| `WINHUB_GRAPHICS_BACKEND` | WinHub (bottle) | `auto` (default), `wined3d`, `dxmt`, `dxvk` or `d3dmetal` |
+| `WINHUB_D3DMETAL_DIR` | WinHub | The `lib` folder of the user's Apple Game Porting Toolkit (with `wine/` and `external/`). The engine never ships D3DMetal |
+| `CX_APPLEGPTK_LIBD3DSHARED_PATH` | WinHub | `<WINHUB_D3DMETAL_DIR>/external/libd3dshared.dylib`; read by the `ntdll` of CodeWeavers' tree |
+| `WINHUB_HOME` | WinHub | WinHub's data folder; the downloaded database is `compat/compatdb.json` in it |
+| `WINHUB_COMPAT_RULES` | WinHub | The bottle's own rules file (for example a backend chosen for one game) |
+| `WINHUB_ACTIVE_GRAPHICS_BACKEND`, `CX_ACTIVE_GRAPHICS_BACKEND` | winhubcompat | The backend chosen; the second is read by CodeWeavers' `win32u` |
 
-Para ver o que ele fez: `WINEDEBUG=+winhubcompat`. A linha `using <backend> as the graphics backend`
-diz o backend de cada processo.
+To see what it did: `WINEDEBUG=+winhubcompat`. The line `using <backend> as the graphics backend` gives the
+backend of each process.
 
-## Escolha do backend
+## Choosing the backend
 
-Candidatos, em ordem; vale o primeiro que puder rodar:
+Candidates, in order; the first one that can run wins:
 
-1. a regra do jogo, se tiver `"force": true`;
-2. a escolha do usuário (`WINHUB_GRAPHICS_BACKEND`), se não for `auto`;
-3. a regra do jogo;
-4. `d3dmetal`, depois `dxmt`;
-5. `wined3d` (sempre pode).
+1. the program's rule, if it has `"force": true`;
+2. the user's choice (`WINHUB_GRAPHICS_BACKEND`), unless it is `auto`;
+3. the program's rule;
+4. `d3dmetal`, then `dxmt`;
+5. `wined3d` (always possible).
 
-Quando cada um pode rodar:
+When each one can run:
 
-| Backend | Exige |
+| Backend | Requires |
 |---|---|
-| `dxmt` | macOS 14 ou mais novo, processo no Rosetta (Apple silicon) e `lib/dxmt/x86_64-windows/d3d11.dll` no motor |
-| `d3dmetal` | o mesmo, processo de 64 bits e `WINHUB_D3DMETAL_DIR` válido |
-| `dxvk` | processo de 64 bits e `lib/dxvk/x86_64-windows/d3d11.dll` no motor (Vulkan pelo MoltenVK). Em 32 bits, sem `VK_EXT_map_memory_placed`, o `win32u` cria buffers com memória do host, e o MoltenVK recusa (o oficial e o da CodeWeavers) |
-| `wined3d` | nada |
+| `dxmt` | macOS 14 or later, a process translated by Rosetta (Apple silicon) and `lib/dxmt/x86_64-windows/d3d11.dll` in the engine |
+| `d3dmetal` | the same, a 64-bit process and a valid `WINHUB_D3DMETAL_DIR` |
+| `dxvk` | a 64-bit process and `lib/dxvk/x86_64-windows/d3d11.dll` in the engine (Vulkan through MoltenVK). In 32-bit processes, without `VK_EXT_map_memory_placed`, `win32u` creates buffers backed by host memory and MoltenVK refuses them (both the official one and CodeWeavers') |
+| `wined3d` | nothing |
 
-As pastas de backend têm o formato de uma pasta de bibliotecas do Wine (`x86_64-windows/`,
-`i386-windows/`, `x86_64-unix/`) e as DLLs são *builtin* (o Wine ignora DLLs comuns nesse caminho).
+Backend folders are laid out like a Wine library folder (`x86_64-windows/`, `i386-windows/`, `x86_64-unix/`)
+and hold builtin DLLs (Wine ignores ordinary DLLs in that path).
 
-## Onde ficam as regras
+## Where the rules come from
 
-Lidas nesta ordem de prioridade:
+Read in this order of precedence:
 
-1. `WINHUB_COMPAT_RULES` (regras da garrafa; `timestamp` opcional);
-2. o mais novo (pelo `timestamp`) entre o banco embutido no motor
-   (`share/winhub-engine/compatdb.json`, vindo de [`data/compatdb.json`](../data/compatdb.json)) e o
-   banco baixado (`$WINHUB_HOME/compat/compatdb.json`). Empate: o embutido.
+1. `WINHUB_COMPAT_RULES` (the bottle's rules; `timestamp` optional);
+2. the newer (by `timestamp`) of the database built into the engine (`share/winhub-engine/compatdb.json`,
+   from [`data/compatdb.json`](https://github.com/AngeloResplandes/winhub-engine/blob/main/data/compatdb.json))
+   and the downloaded one (`$WINHUB_HOME/compat/compatdb.json`). On a tie, the built-in one.
 
-O banco baixado é conferido pelo WinHub antes de ser gravado; o módulo confia no que está no disco.
+For each kind of hack, the **first** one found among the matching rules wins.
 
-### Publicação e assinatura
+WinHub checks the downloaded database before writing it; the module trusts what is on disk.
 
-O banco publicado é este mesmo [`data/compatdb.json`](../data/compatdb.json): o WinHub baixa ele e o
-`data/compatdb.json.sig` da `main` deste repositório, confere a assinatura Ed25519 com a chave pública
-embutida no app (a mesma de [`data/compatdb-public-key.txt`](../data/compatdb-public-key.txt)) e recusa
-um banco com `timestamp` menor que o que já tem. Ao mudar as regras:
+### Publishing and signing
 
-1. aumente o `timestamp` (segundos desde 1970);
-2. `swift scripts/compatdb.swift sign` (usa a chave privada de `~/.winhub-signing/compatdb-ed25519.key`
-   ou de `$WINHUB_COMPATDB_KEY`, que nunca entra no repositório);
-3. faça commit dos dois arquivos. O CI roda `swift scripts/compatdb.swift verify`.
+The published database is `data/compatdb.json` on `main`. WinHub downloads it with `data/compatdb.json.sig`,
+checks the Ed25519 signature with the public key built into the app (the same as
+[`data/compatdb-public-key.txt`](https://github.com/AngeloResplandes/winhub-engine/blob/main/data/compatdb-public-key.txt))
+and refuses a database whose `timestamp` is not newer than the one it has. Steps to change it:
+[Releasing](releasing.md#compatibility-rules).
 
-Para cada tipo de ajuste vale o **primeiro** encontrado entre as regras que casam.
-
-## Formato
+## Format
 
 ```json
 {
@@ -89,7 +88,7 @@ Para cada tipo de ajuste vale o **primeiro** encontrado entre as regras que casa
       ]
     },
     {
-      "desc": "Jogo da Steam pelo appid",
+      "desc": "A Steam game by app ID",
       "match": { "type": "steam_game_id", "game_id": "367520" },
       "hacks": [
         { "type": "dll_overrides", "overrides": ["d3d9=n,b"] },
@@ -100,36 +99,37 @@ Para cada tipo de ajuste vale o **primeiro** encontrado entre as regras que casa
 }
 ```
 
-- `version`: sempre `1`. `timestamp`: segundos desde 1970; obrigatório nos bancos embutido e baixado.
-- `os`: opcional; se existir, precisa ser `"macos"` (regras de outros sistemas são puladas).
+- `version`: always `1`. `timestamp`: seconds since 1970; required in the built-in and downloaded databases.
+- `os`: optional; when present it must be `"macos"` (rules for other systems are skipped).
 - `match`:
-  - `path_suffix`: fim do caminho Windows do programa (`\` ou `/`), sem diferenciar maiúsculas, a partir
-    do começo de um nome de pasta ou arquivo (`game.exe` não casa com `notgame.exe`);
-  - `steam_game_id`: valor de `SteamGameId` no ambiente (a Steam define ao abrir um jogo).
+  - `path_suffix`: the end of the program's Windows path (`\` or `/`), ignoring case, starting at a folder or
+    file name boundary (`game.exe` does not match `notgame.exe`);
+  - `steam_game_id`: the value of `SteamGameId` in the environment (Steam sets it when it starts a game).
 - `hacks`:
-  - `graphics_backend`: `backend` (`wined3d`, `dxmt`, `dxvk`, `d3dmetal`) e `force` opcional;
-  - `dll_overrides`: lista no formato do `WINEDLLOVERRIDES` (`"d3d11=n,b"`);
-  - `env_vars`: objeto `nome: valor`. No próprio processo só o lado Unix vê (Metal, MoltenVK, DXMT);
-    os processos-filho recebem no ambiente do Windows também;
-  - `append_cmd_line`: `append`; `insert` (logo depois do nome do programa em vez do fim);
-    `required_args` / `forbidden_args` (só aplica se a linha tiver / não tiver esse texto). Não repete
-    se o texto já estiver lá. Vale para processos abertos por outro processo do Wine (ex.: jogos abertos
-    pela Steam).
+  - `graphics_backend`: `backend` (`wined3d`, `dxmt`, `dxvk`, `d3dmetal`) and optional `force`;
+  - `dll_overrides`: a list in `WINEDLLOVERRIDES` syntax (`"d3d11=n,b"`);
+  - `env_vars`: a `name: value` object. In the process itself only the Unix side sees them (Metal, MoltenVK,
+    DXMT); child processes also get them in their Windows environment;
+  - `append_cmd_line`: `append`; `insert` (right after the program name instead of at the end);
+    `required_args` / `forbidden_args` (apply only if the command line contains / does not contain this
+    text). Not added twice. Applies to processes started by another Wine process (for example games
+    started by Steam).
 
-Regras inválidas são puladas com um aviso (`WINEDEBUG=warn+winhubcompat`); um arquivo inválido é
-ignorado inteiro.
+Invalid rules are skipped with a warning (`WINEDEBUG=warn+winhubcompat`); an invalid file is ignored as a
+whole.
 
-## Testes
+## D3DMetal and DLSS
 
-`./scripts/test-compatdb.sh` testa leitura, prioridade, escolha do backend, ambiente e linha de comando
-sem precisar do Wine.
+With `d3dmetal` active, `winhubcompat` also wraps `NtCreateFile` and `NtOpenFile` so that
+`C:\windows\system32\nvngx.dll` (where DLSS looks for NVIDIA's library) opens D3DMetal's `nvngx.dll`, which
+plays that role on top of MetalFX.
 
-## D3DMetal e DLSS
+## Tests
 
-Com `d3dmetal` ativo, o `winhubcompat` também envolve `NtCreateFile` e `NtOpenFile` para que
-`C:\windows\system32\nvngx.dll` (onde o DLSS procura a biblioteca da NVIDIA) abra o `nvngx.dll` do
-D3DMetal, que faz o papel dela sobre o MetalFX.
+`./scripts/test-compatdb.sh` covers parsing, precedence, backend choice, environment and command line without
+Wine. See [Testing](testing.md).
 
-## Escolhas de projeto
+## Design choices
 
-Banco em JSON aberto e legível, regras por garrafa, e `auto` escolhe DXMT quando não há D3DMetal.
+An open, readable JSON database; rules per bottle; `auto` picks DXMT when there is no D3DMetal. How this
+compares with CrossOver's closed module: [Parity with CrossOver](crossover-parity.md).
