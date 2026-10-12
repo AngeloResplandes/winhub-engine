@@ -1,0 +1,40 @@
+**English** · [Português (Brasil)](ROADMAP.pt-BR.md)
+
+# winhub-engine roadmap
+
+**Stage: revision 2 on `main`**, release `wine-11.0-r2` pending
+
+> **Last reviewed:** 2026-10-12 · **Target:** the engine inside CrossOver 26.3.0 for macOS
+
+One-page summary. Detail: [parity with CrossOver](docs/crossover-parity.md) (weights and evidence),
+[gaps](docs/gaps.md) (the ranked work list), [decisions](docs/decisions.md).
+
+## Headline
+
+| | Value | Kind |
+|---|---|---|
+| **Engine parity with CrossOver** | **~68%** | estimated, weighted by dimension |
+| Direct3D 10/11 | DXMT 64/32-bit and DXVK 64-bit at feature level 11_0 | measured |
+| Direct3D 12 | only with the user's D3DMetal | measured |
+| Compatibility rules | format, signing and update channel ready; 0 rules | measured |
+
+## Done
+
+- Revision 1 (2026-10-11): official WineHQ build + patched `winemac.so` + DXMT, copied into bottles by WinHub.
+- Revision 2 (2026-10-12): Wine from CrossOver's LGPL sources, `winhubcompat`, DXMT and DXVK as builtins chosen
+  per process, msync, D3DMetal from the user, signed rule database, real user profile kept.
+
+## Next
+
+1. **Release `wine-11.0-r2`** and add it to WinHub's `runtimes.json` ([order](docs/releasing.md#order-with-winhub)).
+2. **First rules:** one per tested game in WinHub's compatibility reports.
+3. **Game videos:** GStreamer and H.264 in the overlay.
+4. **Direct3D 12 without D3DMetal:** evaluate DXMT's D3D12 and vkd3d-proton.
+5. **DXVK in 32-bit:** follow MoltenVK's support for placed memory maps.
+6. **msync numbers:** measure a CPU-bound game.
+
+## Revision history
+
+| Date | Change |
+|---|---|
+| 2026-10-12 | First roadmap, engine revision 2. |

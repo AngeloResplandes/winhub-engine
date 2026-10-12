@@ -2,11 +2,14 @@ name: Build engine
 
 # Every push and pull request builds the engine and runs the smoke test.
 # Pushing a tag "wine-<version>-r<revision>" (matching versions.env) also publishes a release.
+# Changes to documentation only (docs, book, Markdown, the docs workflow) do not build the engine.
 on:
   push:
     branches: [main]
     tags: ['wine-*']
+    paths-ignore: ["**.md", "docs/**", "book/**", ".github/workflows/docs.yml"]
   pull_request:
+    paths-ignore: ["**.md", "docs/**", "book/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
 
 permissions:

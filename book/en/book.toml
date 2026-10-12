@@ -1,0 +1,21 @@
+[book]
+authors = ["winhub-engine contributors"]
+language = "en"
+src = "../../docs"
+title = "winhub-engine documentation"
+
+[build]
+build-dir = "../../site"
+create-missing = false
+
+[output.html]
+git-repository-icon = "fa-github"
+git-repository-url = "https://github.com/AngeloResplandes/winhub-engine"
+edit-url-template = "https://github.com/AngeloResplandes/winhub-engine/edit/main/docs/{path}"
+preferred-dark-theme = "navy"
+smart-punctuation = true
+
+[output.html.search]
+enable = true
+limit-results = 30
+boost-title = 2
