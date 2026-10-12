@@ -2,7 +2,7 @@
 
 # Roadmap do winhub-engine
 
-**Estágio: revisão 2 na `main`**, versão `wine-11.0-r2` pendente
+**Estágio: revisão 2**, publicada como [`wine-11.0-r2`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r2) e motor padrão do WinHub
 
 > **Última revisão:** 2026-10-12 · **Alvo:** o motor que vem no CrossOver 26.3.0 para macOS
 
@@ -23,19 +23,20 @@ Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover
 - Revisão 1 (2026-10-11): pacote oficial do WineHQ + `winemac.so` modificado + DXMT, copiado para as garrafas
   pelo WinHub.
 - Revisão 2 (2026-10-12): Wine das fontes LGPL do CrossOver, `winhubcompat`, DXMT e DXVK como builtins escolhidas
-  por processo, msync, D3DMetal do usuário, banco de regras assinado, perfil de usuário real mantido.
+  por processo, msync, D3DMetal do usuário, banco de regras assinado, perfil de usuário real mantido. Publicada
+  como `wine-11.0-r2` e transformada no motor padrão do WinHub no mesmo dia.
 
 ## Próximos passos
 
-1. **Publicar a `wine-11.0-r2`** e acrescentá-la ao `runtimes.json` do WinHub ([ordem](docs/pt-BR/releasing.md#ordem-com-o-winhub)).
-2. **Primeiras regras:** uma por jogo testado nos relatórios de compatibilidade do WinHub.
-3. **Vídeos dos jogos:** GStreamer e H.264 no overlay.
-4. **Direct3D 12 sem D3DMetal:** avaliar o D3D12 do DXMT e o vkd3d-proton.
-5. **DXVK em 32 bits:** acompanhar o suporte do MoltenVK a mapeamentos de memória posicionados.
-6. **Números do msync:** medir um jogo limitado pela CPU.
+1. **Primeiras regras:** uma por jogo testado nos relatórios de compatibilidade do WinHub.
+2. **Vídeos dos jogos:** GStreamer e H.264 no overlay.
+3. **Direct3D 12 sem D3DMetal:** avaliar o D3D12 do DXMT e o vkd3d-proton.
+4. **DXVK em 32 bits:** acompanhar o suporte do MoltenVK a mapeamentos de memória posicionados.
+5. **Números do msync:** medir um jogo limitado pela CPU.
 
 ## Histórico de revisões
 
 | Data | Mudança |
 |---|---|
 | 2026-10-12 | Primeiro roadmap, revisão 2 do motor. |
+| 2026-10-12 | `wine-11.0-r2` publicada e transformada no motor padrão do WinHub. |

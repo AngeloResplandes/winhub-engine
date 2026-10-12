@@ -2,7 +2,7 @@
 
 # Paridade com o motor do CrossOver
 
-> **Última revisão:** 2026-10-12 · **Motor:** revisão 2 (`main`, ainda não publicada) · **Alvo:** o motor que
+> **Última revisão:** 2026-10-12 · **Motor:** revisão 2 (`wine-11.0-r2`) · **Alvo:** o motor que
 > vem no CrossOver 26.3.0 para macOS
 
 O quanto o winhub-engine se aproxima do motor que o CrossOver traz, dimensão por dimensão. Números "medidos" vêm
