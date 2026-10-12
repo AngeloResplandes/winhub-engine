@@ -56,9 +56,17 @@ typedef NTSTATUS (*create_user_process_func)( HANDLE *, HANDLE *, ACCESS_MASK, A
                                               RTL_USER_PROCESS_PARAMETERS *, PS_CREATE_INFO *,
                                               PS_ATTRIBUTE_LIST * );
 
+typedef NTSTATUS (*create_file_func)( HANDLE *, ACCESS_MASK, OBJECT_ATTRIBUTES *, IO_STATUS_BLOCK *,
+                                      LARGE_INTEGER *, ULONG, ULONG, ULONG, ULONG, void *, ULONG );
+typedef NTSTATUS (*open_file_func)( HANDLE *, ACCESS_MASK, OBJECT_ATTRIBUTES *, IO_STATUS_BLOCK *, ULONG, ULONG );
+
 static struct compat_db db;
 static char *root_dir;  /* the runtime's folder with bin/ and lib/ */
 static create_user_process_func real_NtCreateUserProcess;
+static create_file_func real_NtCreateFile;
+static open_file_func real_NtOpenFile;
+/* With D3DMetal: DLSS looks for nvngx.dll in system32; D3DMetal's own one answers instead. */
+static UNICODE_STRING nvngx_target;
 
 static void warn_db( const char *format, ... )
 {
@@ -171,6 +179,8 @@ static const char *strv_lookup( char **strv, const char *name )
         if (!strncasecmp( strv[i], name, len ) && strv[i][len] == '=') return strv[i] + len + 1;
     return NULL;
 }
+
+static void set_nvngx_target( const char *dll_dir );
 
 static const char *rule_name( const struct compat_rule *rule )
 {
@@ -294,6 +304,7 @@ static void set_graphics_backend( const struct compat_hack *hack, const struct c
     setenv( "WINHUB_ACTIVE_GRAPHICS_BACKEND", compat_backend_name( backend ), 1 );
 
     if (backend == COMPAT_BACKEND_WINED3D || !(dir = backend_dll_dir( backend ))) return;
+    if (backend == COMPAT_BACKEND_D3DMETAL) set_nvngx_target( dir );
     if (!(prepend_dll_path = dlsym( RTLD_DEFAULT, "prepend_dll_path" )))
     {
         WARN( "ntdll does not export prepend_dll_path\n" );
@@ -418,8 +429,68 @@ static NTSTATUS hooked_NtCreateUserProcess( HANDLE *process_handle, HANDLE *thre
     return status;
 }
 
-/* Point the NtCreateUserProcess entry of ntdll's syscall table at the wrapper. */
-static void hook_create_user_process( void )
+/* nvngx.dll */
+
+static const WCHAR system32_nvngx[] = u"\\??\\C:\\windows\\system32\\nvngx.dll";
+
+/* \??\unix<dir>/x86_64-windows/nvngx.dll, if D3DMetal has one. */
+static void set_nvngx_target( const char *dll_dir )
+{
+    char *path, *nt_path;
+    DWORD len;
+
+    if (!(path = path_join( dll_dir, "x86_64-windows/nvngx.dll" ))) return;
+    if (!access( path, F_OK ) && asprintf( &nt_path, "\\??\\unix%s", path ) >= 0)
+    {
+        if ((nvngx_target.Buffer = utf8_to_wide( nt_path, &len )))
+        {
+            nvngx_target.Length = len * sizeof(WCHAR);
+            nvngx_target.MaximumLength = nvngx_target.Length + sizeof(WCHAR);
+        }
+        free( nt_path );
+    }
+    free( path );
+}
+
+static BOOL is_system32_nvngx( const OBJECT_ATTRIBUTES *attr )
+{
+    const UNICODE_STRING *name = attr ? attr->ObjectName : NULL;
+    DWORD len = ARRAY_SIZE(system32_nvngx) - 1;
+
+    return name && name->Buffer && !attr->RootDirectory && name->Length == len * sizeof(WCHAR) &&
+           !ntdll_wcsnicmp( name->Buffer, system32_nvngx, len );
+}
+
+/* A copy of the attributes naming D3DMetal's nvngx.dll, or the original ones. */
+static OBJECT_ATTRIBUTES *redirect_nvngx( OBJECT_ATTRIBUTES *attr, OBJECT_ATTRIBUTES *copy )
+{
+    if (!nvngx_target.Buffer || !is_system32_nvngx( attr )) return attr;
+    TRACE( "redirecting nvngx.dll to %s\n", debugstr_wn( nvngx_target.Buffer, nvngx_target.Length / sizeof(WCHAR) ) );
+    *copy = *attr;
+    copy->ObjectName = &nvngx_target;
+    return copy;
+}
+
+static NTSTATUS hooked_NtCreateFile( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
+                                     IO_STATUS_BLOCK *io, LARGE_INTEGER *alloc_size, ULONG attributes,
+                                     ULONG sharing, ULONG disposition, ULONG options, void *ea_buffer,
+                                     ULONG ea_length )
+{
+    OBJECT_ATTRIBUTES copy;
+    return real_NtCreateFile( handle, access, redirect_nvngx( attr, &copy ), io, alloc_size, attributes,
+                              sharing, disposition, options, ea_buffer, ea_length );
+}
+
+static NTSTATUS hooked_NtOpenFile( HANDLE *handle, ACCESS_MASK access, OBJECT_ATTRIBUTES *attr,
+                                   IO_STATUS_BLOCK *io, ULONG sharing, ULONG options )
+{
+    OBJECT_ATTRIBUTES copy;
+    return real_NtOpenFile( handle, access, redirect_nvngx( attr, &copy ), io, sharing, options );
+}
+
+
+/* Points an entry of ntdll's syscall table at a wrapper; returns the original function. */
+static void *hook_syscall( void *function, void *wrapper, const char *name )
 {
     SYSTEM_SERVICE_TABLE *table = dlsym( RTLD_DEFAULT, "KeServiceDescriptorTable" );
     ULONG_PTR i, page = getpagesize();
@@ -427,26 +498,27 @@ static void hook_create_user_process( void )
     if (!table || !table->ServiceTable)
     {
         WARN( "ntdll does not export KeServiceDescriptorTable\n" );
-        return;
+        return NULL;
     }
     for (i = 0; i < table->ServiceLimit; i++)
     {
-        void *start;
+        void *start, *original;
 
-        if (table->ServiceTable[i] != (ULONG_PTR)NtCreateUserProcess) continue;
+        if (table->ServiceTable[i] != (ULONG_PTR)function) continue;
         start = (void *)((ULONG_PTR)&table->ServiceTable[i] & ~(page - 1));
         /* The table stays writable afterwards: restoring a guessed protection could also take
          * write access away from unrelated data on the same page. */
         if (mprotect( start, page, PROT_READ | PROT_WRITE ))
         {
             WARN( "cannot make the syscall table writable: %d\n", errno );
-            return;
+            return NULL;
         }
-        real_NtCreateUserProcess = (create_user_process_func)table->ServiceTable[i];
-        table->ServiceTable[i] = (ULONG_PTR)hooked_NtCreateUserProcess;
-        return;
+        original = (void *)table->ServiceTable[i];
+        table->ServiceTable[i] = (ULONG_PTR)wrapper;
+        return original;
     }
-    WARN( "NtCreateUserProcess is not in the syscall table\n" );
+    WARN( "%s is not in the syscall table\n", name );
+    return NULL;
 }
 
 static void __attribute__((constructor)) winhubcompat_init( void )
@@ -465,5 +537,12 @@ static void __attribute__((constructor)) winhubcompat_init( void )
     free( downloaded );
 
     apply_in_process();
-    if (db.count) hook_create_user_process();
+    if (db.count)
+        real_NtCreateUserProcess = hook_syscall( (void *)NtCreateUserProcess, (void *)hooked_NtCreateUserProcess,
+                                                 "NtCreateUserProcess" );
+    if (nvngx_target.Buffer)
+    {
+        real_NtCreateFile = hook_syscall( (void *)NtCreateFile, (void *)hooked_NtCreateFile, "NtCreateFile" );
+        real_NtOpenFile = hook_syscall( (void *)NtOpenFile, (void *)hooked_NtOpenFile, "NtOpenFile" );
+    }
 }

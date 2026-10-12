@@ -40,7 +40,10 @@ Conteúdo do overlay:
 - `bin/wine`, `bin/wineserver` e os atalhos de sempre (`wineboot`, `winecfg`…); `lib/wine/` e
   `share/wine/` do Wine 11.0 das fontes do CrossOver, com [`patches/wine`](patches/wine):
   - `0001`: o `ntdll` carrega o `winhubcompat.so` no lugar do módulo fechado do CrossOver;
-  - `0002`: usa o wine-mono 11.3.0 que vem no pacote oficial.
+  - `0002`: usa o wine-mono 11.3.0 que vem no pacote oficial;
+  - `0003`: mantém o nome de usuário real, o perfil `C:\users\<usuário>` e a pasta `Desktop` ligada à
+    Área de Trabalho do Mac, como no Wine oficial (a árvore da CodeWeavers usa "crossover" para todos,
+    o que faria garrafas existentes perderem o perfil onde a Steam e os jogos guardam dados).
 - `lib/wine/x86_64-unix/winhubcompat.so`: [`src/winhubcompat`](src/winhubcompat).
 - `lib/dxmt/{x86_64-windows,i386-windows,x86_64-unix}`: [DXMT](https://github.com/3Shain/dxmt) v0.80
   (`d3d11`, `dxgi`, `d3d10core`, `winemetal`) como DLLs *builtin* do Wine, com

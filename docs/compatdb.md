@@ -112,6 +112,12 @@ ignorado inteiro.
 `./scripts/test-compatdb.sh` testa leitura, prioridade, escolha do backend, ambiente e linha de comando
 sem precisar do Wine.
 
+## D3DMetal e DLSS
+
+Com `d3dmetal` ativo, o `winhubcompat` também envolve `NtCreateFile` e `NtOpenFile` para que
+`C:\windows\system32\nvngx.dll` (onde o DLSS procura a biblioteca da NVIDIA) abra o `nvngx.dll` do
+D3DMetal, que faz o papel dela sobre o MetalFX.
+
 ## Escolhas de projeto
 
 Banco em JSON aberto e legível, regras por garrafa, e `auto` escolhe DXMT quando não há D3DMetal.

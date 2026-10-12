@@ -1,0 +1,87 @@
+From: WinHub <noreply@winhub.invalid>
+Subject: [PATCH] advapi32, shell32: Keep the real user name and the Mac desktop.
+
+CrossOver reports every user as "crossover", puts their profile in
+C:\users\crossover and makes Desktop a folder with a link to the Mac desktop
+inside. Bottles made with the official Wine use the real
+user name for their profile (where Steam and games keep their data) and link
+Desktop to the Mac desktop, so keep upstream Wine's behavior.
+---
+diff -u a/dlls/advapi32/advapi.c b/dlls/advapi32/advapi.c
+--- a/dlls/advapi32/advapi.c	2026-10-11 23:43:44
++++ b/dlls/advapi32/advapi.c	2026-10-11 23:43:44
+@@ -48,16 +48,6 @@
+     DWORD len = GetEnvironmentVariableA( "WINEUSERNAME", name, *size );
+     BOOL ret;
+ 
+-    /* CrossOver Hack 12735: Use a consistent username */
+-    if (!getenv( "CX_REPORT_REAL_USERNAME" ))
+-    {
+-        len = sizeof("crossover");
+-        if ((ret = (len <= *size))) strcpy( name, "crossover" );
+-        else SetLastError( ERROR_INSUFFICIENT_BUFFER );
+-        *size = len;
+-        return ret;
+-    }
+-
+     if (!len) return FALSE;
+     if ((ret = (len < *size))) len++;
+     else SetLastError( ERROR_INSUFFICIENT_BUFFER );
+@@ -72,16 +62,6 @@
+ {
+     DWORD len = GetEnvironmentVariableW( L"WINEUSERNAME", name, *size );
+     BOOL ret;
+-
+-    /* CrossOver Hack 12735: Use a consistent username */
+-    if (!getenv( "CX_REPORT_REAL_USERNAME" ))
+-    {
+-        len = ARRAY_SIZE( L"crossover" );
+-        if ((ret = (len <= *size))) wcscpy( name, L"crossover" );
+-        else SetLastError( ERROR_INSUFFICIENT_BUFFER );
+-        *size = len;
+-        return ret;
+-    }
+ 
+     if (!len) return FALSE;
+     if ((ret = (len < *size))) len++;
+diff -u a/dlls/shell32/shellpath.c b/dlls/shell32/shellpath.c
+--- a/dlls/shell32/shellpath.c	2026-10-11 23:43:44
++++ b/dlls/shell32/shellpath.c	2026-10-11 23:43:44
+@@ -2632,10 +2632,11 @@
+         }
+         else if (!wcsnicmp(szTemp, L"%USERPROFILE%", lstrlenW(L"%USERPROFILE%")))
+         {
+-            /* CrossOver Hack 12735 */
+-            static const WCHAR userName[] = {'c','r','o','s','s','o','v','e','r',0};
++            WCHAR userName[MAX_PATH];
++            DWORD userLen = MAX_PATH;
+ 
+             lstrcpyW(szDest, szProfilesPrefix);
++            GetUserNameW(userName, &userLen);
+             PathAppendW(szDest, userName);
+             PathAppendW(szDest, szTemp + lstrlenW(L"%USERPROFILE%"));
+         }
+@@ -2866,11 +2867,6 @@
+             create_link( path, "XDG_DOCUMENTS_DIR", "$HOME/Documents" );
+             break;
+         case CSIDL_DESKTOPDIRECTORY:
+-            if (!getenv("CX_DIRECT_DESKTOP"))
+-            {
+-                _SHCreateDesktopSymbolicLink( path );
+-                break;
+-            }
+             create_link( path, "XDG_DESKTOP_DIR", "$HOME/Desktop" );
+             break;
+         case CSIDL_MYPICTURES:
+@@ -3328,11 +3324,6 @@
+ 
+     TRACE("\n");
+ 
+-    if (!getenv("CX_DIRECT_DESKTOP"))
+-    {
+-        SHGetFolderPathW( 0, CSIDL_DESKTOPDIRECTORY | CSIDL_FLAG_DONT_VERIFY, 0, 0, path );
+-        _SHCreateDesktopSymbolicLink( path );
+-    }
+     for (i = 0; i < ARRAY_SIZE(ids); i++) {
+         /* Calculate the Windows path for this folder */
+         SHGetFolderPathW( 0, ids[i], 0, 0, path );
