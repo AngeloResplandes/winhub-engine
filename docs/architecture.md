@@ -26,7 +26,7 @@ which this repository does not build.
 ```
 
 `share/winhub-engine/engine.json` lists the versions and the `features` WinHub checks:
-`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`.
+`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`, `nvext` (revision 3).
 
 ## Build pipeline
 

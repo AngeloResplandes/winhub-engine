@@ -4,6 +4,14 @@
 
 Dated record of the decisions that shaped the engine, newest first.
 
+## 2026-10-12: DXMT's NVIDIA extensions ship, off unless the bottle asks
+
+Revision 3 builds DXMT's `nvapi64` and `nvngx` (meson `enable_nvapi`, `enable_nvngx`; NVIDIA's MIT NVAPI headers
+at the commit DXMT pins). They live in `lib/dxmt` and are only reached with DXMT active. DXMT itself keeps them
+inert unless `DXMT_ENABLE_NVEXT=1`, which WinHub sets per bottle, so a game sees "no NVIDIA device" by default, as
+before. No `nvngx` redirect is needed for DXMT: Wine resolves `system32\nvngx.dll`, which is not on disk, to the
+builtin in the DLL path.
+
 ## 2026-10-12: Documentation describes the reverse engineering openly
 
 The project documents what was studied in CrossOver and how it is reproduced, in the style of other clean-room

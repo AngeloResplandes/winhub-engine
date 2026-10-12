@@ -38,7 +38,7 @@ static const char * const backend_names[COMPAT_BACKEND_COUNT] =
 
 static const char * const hack_names[COMPAT_HACK_COUNT] =
 {
-    "graphics_backend", "dll_overrides", "env_vars", "append_cmd_line"
+    "graphics_backend", "dll_overrides", "env_vars", "append_cmd_line", "replace_exe_path"
 };
 
 int compat_backend_from_name(const char *name)
@@ -85,6 +85,7 @@ static void free_hack(struct compat_hack *hack)
     free(hack->append);
     free(hack->required_args);
     free(hack->forbidden_args);
+    free(hack->exe_path);
 }
 
 static void free_rule(struct compat_rule *rule)
@@ -232,6 +233,17 @@ static int parse_hack(const cJSON *json, const char *desc, struct compat_hack *h
             free_hack(hack);
             return -1;
         }
+        return 0;
+
+    case COMPAT_HACK_REPLACE_EXE_PATH:
+        item = cJSON_GetObjectItemCaseSensitive(json, "path");
+        if (!cJSON_IsString(item) || !item->valuestring[0])
+        {
+            WARN_DB("rule %s: replace_exe_path needs a \"path\" string\n", desc);
+            return -1;
+        }
+        hack->exe_path = strdup(item->valuestring);
+        to_backslashes(hack->exe_path);
         return 0;
 
     default:
@@ -591,5 +603,33 @@ char *compat_cmdline_apply(const char *cmdline, const struct compat_hack *hack)
     result[split] = ' ';
     memcpy(result + split + 1, hack->append, append_len);
     strcpy(result + split + 1 + append_len, cmdline + split);
+    return result;
+}
+
+char *compat_exe_replace_cmdline(const char *image_path, const char *cmdline, const struct compat_hack *hack)
+{
+    size_t path_len, rest_len, i;
+    const char *rest = "";
+    char *result;
+
+    if (!hack->exe_path || !image_path) return NULL;
+    path_len = strlen(hack->exe_path);
+    if (strlen(image_path) == path_len)
+    {
+        for (i = 0; i < path_len; i++)
+        {
+            char a = image_path[i] == '/' ? '\\' : ascii_lower(image_path[i]);
+            if (a != ascii_lower(hack->exe_path[i])) break;
+        }
+        if (i == path_len) return NULL;
+    }
+
+    if (cmdline) rest = cmdline + program_name_end(cmdline);
+    rest_len = strlen(rest);
+    if (!(result = malloc(path_len + rest_len + 3))) return NULL;
+    result[0] = '"';
+    memcpy(result + 1, hack->exe_path, path_len);
+    result[path_len + 1] = '"';
+    memcpy(result + path_len + 2, rest, rest_len + 1);
     return result;
 }

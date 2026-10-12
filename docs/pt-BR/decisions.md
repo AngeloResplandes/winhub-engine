@@ -4,6 +4,14 @@
 
 Registro datado das decisões que deram forma ao motor, das mais novas para as mais antigas.
 
+## 2026-10-12: As extensões da NVIDIA do DXMT entram no motor, desligadas até a garrafa pedir
+
+A revisão 3 compila o `nvapi64` e o `nvngx` do DXMT (opções `enable_nvapi` e `enable_nvngx` do meson; cabeçalhos
+NVAPI da NVIDIA, MIT, no commit que o DXMT fixa). Eles ficam em `lib/dxmt` e só são alcançados com o DXMT ativo. O
+próprio DXMT os mantém inertes sem `DXMT_ENABLE_NVEXT=1`, que o WinHub liga por garrafa; por padrão o jogo vê "nenhum
+dispositivo NVIDIA", como antes. O DXMT não precisa de redirecionamento do `nvngx`: o Wine resolve o
+`system32\nvngx.dll`, que não existe no disco, para a builtin do caminho de DLLs.
+
 ## 2026-10-12: A documentação descreve a engenharia reversa abertamente
 
 O projeto documenta o que foi estudado no CrossOver e como isso é reproduzido, no estilo de outras

@@ -52,6 +52,10 @@ for dll in d3d11 dxgi d3d10core winemetal; do
     cp "$(find_one "$WORK/dxmt-install/x32" "$dll.dll")" "$o/lib/dxmt/i386-windows/$dll.dll"
 done
 cp "$(find_one "$WORK/dxmt-install/x64" winemetal.so)" "$o/lib/dxmt/x86_64-unix/winemetal.so"
+# NVIDIA's APIs over Metal (64-bit only); winhubcompat points system32's nvngx.dll here when on.
+for dll in nvapi64 nvngx; do
+    cp "$(find_one "$WORK/dxmt-install/x64" "$dll.dll")" "$o/lib/dxmt/x86_64-windows/$dll.dll"
+done
 # Wine finds a builtin it does not know only through its file in system32, which wineboot creates for
 # the DLLs in lib/wine (CrossOver ships winemetal.dll there too). The one in lib/dxmt is the one loaded.
 cp "$o/lib/dxmt/x86_64-windows/winemetal.dll" "$o/lib/wine/x86_64-windows/"
@@ -67,9 +71,10 @@ mkdir -p "$e"
 cp "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$e/"
 cp "$ROOT/data/compatdb.json" "$e/compatdb.json"
 cp "$WORK/dxmt/LICENSE" "$e/DXMT-LICENSE"
+cp "$WORK/dxmt/external/nvapi/License.txt" "$e/NVAPI-LICENSE"
 cp "$WORK/dxvk-cx$CROSSOVER_VERSION/LICENSE" "$e/DXVK-LICENSE"
 cp "$(cjson_dir)/LICENSE" "$e/cJSON-LICENSE"
-features='["dxmt", "dxvk", "msync", "backend-dispatch", "compatdb"]'
+features='["dxmt", "dxvk", "msync", "backend-dispatch", "compatdb", "nvext"]'
 cat > "$e/engine.json" <<EOF
 {
   "revision": $ENGINE_REVISION,

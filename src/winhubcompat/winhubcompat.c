@@ -364,6 +364,30 @@ static void apply_in_process( void )
 
 /* child processes */
 
+/* C:\x.exe -> \??\C:\x.exe, the form NtCreateUserProcess takes in its attributes. */
+static char *dos_to_nt_path( const char *dos_path )
+{
+    char *ret = malloc( strlen( dos_path ) + 5 );
+
+    if (ret) sprintf( ret, "\\??\\%s", dos_path );
+    return ret;
+}
+
+/* Copy of the attribute list with another image name (an NT path), or NULL if it has none. */
+static PS_ATTRIBUTE_LIST *replace_image_name( const PS_ATTRIBUTE_LIST *list, WCHAR *nt_name, DWORD len )
+{
+    SIZE_T i, count = (list->TotalLength - sizeof(list->TotalLength)) / sizeof(PS_ATTRIBUTE);
+    PS_ATTRIBUTE_LIST *copy;
+
+    for (i = 0; i < count; i++)
+        if (list->Attributes[i].Attribute == PS_ATTRIBUTE_IMAGE_NAME) break;
+    if (i == count || !(copy = malloc( list->TotalLength ))) return NULL;
+    memcpy( copy, list, list->TotalLength );
+    copy->Attributes[i].Size = len * sizeof(WCHAR);
+    copy->Attributes[i].ValuePtr = nt_name;
+    return copy;
+}
+
 static NTSTATUS hooked_NtCreateUserProcess( HANDLE *process_handle, HANDLE *thread_handle,
                                             ACCESS_MASK process_access, ACCESS_MASK thread_access,
                                             OBJECT_ATTRIBUTES *process_attr, OBJECT_ATTRIBUTES *thread_attr,
@@ -374,9 +398,10 @@ static NTSTATUS hooked_NtCreateUserProcess( HANDLE *process_handle, HANDLE *thre
     const struct compat_hack *found[COMPAT_HACK_COUNT];
     const struct compat_rule *rule[COMPAT_HACK_COUNT];
     RTL_USER_PROCESS_PARAMETERS copy;
-    char *image = NULL, *cmdline = NULL, *new_cmdline = NULL;
+    char *image = NULL, *cmdline = NULL, *new_cmdline = NULL, *exe_cmdline = NULL, *nt_name = NULL;
     char **env = NULL, **new_env = NULL;
-    WCHAR *env_block = NULL, *cmdline_w = NULL;
+    WCHAR *env_block = NULL, *cmdline_w = NULL, *exe_w = NULL, *exe_nt_w = NULL, *exe_cmdline_w = NULL;
+    PS_ATTRIBUTE_LIST *attr_copy = NULL;
     NTSTATUS status;
 
     /* Normalized parameters hold plain pointers, so a copy can point at new strings. */
@@ -390,6 +415,34 @@ static NTSTATUS hooked_NtCreateUserProcess( HANDLE *process_handle, HANDLE *thre
     env = env_block_to_strv( params->Environment );
     compat_db_find( &db, image, strv_lookup( env, "SteamGameId" ), found, rule );
 
+    if (found[COMPAT_HACK_REPLACE_EXE_PATH] && ps_attr)
+    {
+        const struct compat_hack *hack = found[COMPAT_HACK_REPLACE_EXE_PATH];
+        DWORD exe_len, nt_len, cmdline_len;
+
+        cmdline = params->CommandLine.Buffer
+            ? wide_to_utf8( params->CommandLine.Buffer, params->CommandLine.Length / sizeof(WCHAR) ) : NULL;
+        if ((exe_cmdline = compat_exe_replace_cmdline( image, cmdline, hack )) &&
+            (nt_name = dos_to_nt_path( hack->exe_path )) &&
+            (exe_nt_w = utf8_to_wide( nt_name, &nt_len )) &&
+            (exe_w = utf8_to_wide( hack->exe_path, &exe_len )) &&
+            (exe_cmdline_w = utf8_to_wide( exe_cmdline, &cmdline_len )) && cmdline_len < 0x7fff &&
+            (attr_copy = replace_image_name( ps_attr, exe_nt_w, nt_len )))
+        {
+            TRACE( "rule %s: replacing %s with %s\n", rule_name( rule[COMPAT_HACK_REPLACE_EXE_PATH] ),
+                   debugstr_a(image), debugstr_a(hack->exe_path) );
+            copy.ImagePathName.Buffer = exe_w;
+            copy.ImagePathName.Length = exe_len * sizeof(WCHAR);
+            copy.ImagePathName.MaximumLength = (exe_len + 1) * sizeof(WCHAR);
+            copy.CommandLine.Buffer = exe_cmdline_w;
+            copy.CommandLine.Length = cmdline_len * sizeof(WCHAR);
+            copy.CommandLine.MaximumLength = (cmdline_len + 1) * sizeof(WCHAR);
+            ps_attr = attr_copy;
+        }
+        free( cmdline );
+        cmdline = NULL;
+    }
+
     if (found[COMPAT_HACK_ENV_VARS] && env &&
         (new_env = compat_env_apply( (const char *const *)env, found[COMPAT_HACK_ENV_VARS] )) &&
         (env_block = strv_to_env_block( new_env, &copy.EnvironmentSize )))
@@ -399,9 +452,9 @@ static NTSTATUS hooked_NtCreateUserProcess( HANDLE *process_handle, HANDLE *thre
         copy.Environment = env_block;
     }
 
-    if (found[COMPAT_HACK_APPEND_CMD_LINE] && params->CommandLine.Buffer)
+    if (found[COMPAT_HACK_APPEND_CMD_LINE] && copy.CommandLine.Buffer)
     {
-        cmdline = wide_to_utf8( params->CommandLine.Buffer, params->CommandLine.Length / sizeof(WCHAR) );
+        cmdline = wide_to_utf8( copy.CommandLine.Buffer, copy.CommandLine.Length / sizeof(WCHAR) );
         if (cmdline && (new_cmdline = compat_cmdline_apply( cmdline, found[COMPAT_HACK_APPEND_CMD_LINE] )))
         {
             DWORD len;
@@ -419,6 +472,12 @@ static NTSTATUS hooked_NtCreateUserProcess( HANDLE *process_handle, HANDLE *thre
     status = real_NtCreateUserProcess( process_handle, thread_handle, process_access, thread_access,
                                        process_attr, thread_attr, process_flags, thread_flags,
                                        &copy, info, ps_attr );
+    free( attr_copy );
+    free( exe_cmdline_w );
+    free( exe_nt_w );
+    free( exe_w );
+    free( nt_name );
+    free( exe_cmdline );
     free( cmdline_w );
     free( new_cmdline );
     free( cmdline );

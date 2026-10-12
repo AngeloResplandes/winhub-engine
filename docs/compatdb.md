@@ -113,7 +113,11 @@ and refuses a database whose `timestamp` is not newer than the one it has. Steps
   - `append_cmd_line`: `append`; `insert` (right after the program name instead of at the end);
     `required_args` / `forbidden_args` (apply only if the command line contains / does not contain this
     text). Not added twice. Applies to processes started by another Wine process (for example games
-    started by Steam).
+    started by Steam);
+  - `replace_exe_path` (revision 3): `path`, the Windows path of a program to start instead of the one that
+    matched (`"C:\\Game\\Game.exe"`), with the same arguments. For launchers that must be skipped. Like
+    `append_cmd_line`, it applies to processes started by another Wine process, and never to the target
+    itself (a rule cannot start it in a loop).
 
 Invalid rules are skipped with a warning (`WINEDEBUG=warn+winhubcompat`); an invalid file is ignored as a
 whole.
@@ -123,6 +127,11 @@ whole.
 With `d3dmetal` active, `winhubcompat` also wraps `NtCreateFile` and `NtOpenFile` so that
 `C:\windows\system32\nvngx.dll` (where DLSS looks for NVIDIA's library) opens D3DMetal's `nvngx.dll`, which
 plays that role on top of MetalFX.
+
+With `dxmt` (revision 3), the engine's `lib/dxmt` also has DXMT's `nvapi64.dll` and `nvngx.dll` (DLSS over
+MetalFX). Wine finds them through the DLL path `winhubcompat` sets, so no file is copied into the bottle. They only
+answer with `DXMT_ENABLE_NVEXT=1`, which WinHub sets per bottle (feature `nvext`); without it `NvAPI_Initialize`
+returns "NVIDIA device not found", as on a Mac without the option.
 
 ## Tests
 

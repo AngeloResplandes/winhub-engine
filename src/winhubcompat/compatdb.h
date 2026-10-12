@@ -44,6 +44,7 @@ enum compat_hack_type
     COMPAT_HACK_DLL_OVERRIDES,
     COMPAT_HACK_ENV_VARS,
     COMPAT_HACK_APPEND_CMD_LINE,
+    COMPAT_HACK_REPLACE_EXE_PATH,
     COMPAT_HACK_COUNT
 };
 
@@ -59,6 +60,7 @@ struct compat_hack
     char *required_args;         /* append_cmd_line: only if the command line contains this */
     char *forbidden_args;        /* append_cmd_line: not if the command line contains this */
     int insert;                  /* append_cmd_line: right after the program name instead of at the end */
+    char *exe_path;              /* replace_exe_path: Windows path (backslashes) of the program to start instead */
 };
 
 struct compat_rule
@@ -112,5 +114,9 @@ void compat_strv_free(char **strv);
 
 /* New command line with the hack applied, or NULL when it does not apply or is already there. */
 char *compat_cmdline_apply(const char *cmdline, const struct compat_hack *hack);
+
+/* Command line starting the hack's program instead of image_path, with the same arguments, or NULL
+ * when the hack does not apply (image_path already is that program). cmdline may be NULL. */
+char *compat_exe_replace_cmdline(const char *image_path, const char *cmdline, const struct compat_hack *hack);
 
 #endif

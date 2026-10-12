@@ -28,6 +28,8 @@ quadros:
 | DXMT, 64 e 32 bits | feature level 11_0, `OK presented 30 frames`, `winhubcompat` escolheu `dxmt` |
 | DXVK, 64 bits | o mesmo com `dxvk` |
 | DXVK pedido por um programa de 32 bits | o `winhubcompat` cai para o `dxmt`, que passa |
+| Extensões da NVIDIA (`tests/nvapi-smoke.c`, DXMT) | com `DXMT_ENABLE_NVEXT=1`, o `nvapi64` carrega, o `NvAPI_Initialize` dá certo e o `system32\nvngx.dll` abre o do DXMT; sem ela, o `NvAPI_Initialize` recusa |
+| `replace_exe_path` | uma regra local faz o `cmd` abrir o teste de 64 bits no lugar de um "lançador" de 32 bits; o trace mostra `replacing` e o teste passa |
 | A garrafa | o `system32` só tem as `d3d11`, `dxgi`, `d3d10core` e `winemetal` do próprio Wine |
 
 `SMOKE_BACKENDS="dxmt"` limita os backends. O CI roda o teste completo.
