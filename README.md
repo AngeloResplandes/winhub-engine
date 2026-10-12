@@ -54,7 +54,7 @@ Details: [Architecture](docs/architecture.md) and [winhubcompat](docs/compatdb.m
 
 | | |
 |---|---|
-| Engine revision | 2 (on `main`; release `wine-11.0-r2` pending) |
+| Engine revision | 2, release [`wine-11.0-r2`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r2), WinHub's default engine |
 | Parity with CrossOver's engine | **~68%** (estimated, [details](docs/crossover-parity.md)) |
 | Tested | DXMT 64/32-bit and DXVK 64-bit at D3D feature level 11_0 (smoke test); Hollow Knight through DXMT with Steam (2026-10-12) |
 | Biggest gaps | D3D12 without D3DMetal, empty rule database, game videos ([all gaps](docs/gaps.md)) |

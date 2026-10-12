@@ -2,7 +2,7 @@
 
 # Parity with CrossOver's engine
 
-> **Last reviewed:** 2026-10-12 · **Engine:** revision 2 (`main`, not yet released) · **Target:** the engine
+> **Last reviewed:** 2026-10-12 · **Engine:** revision 2 (`wine-11.0-r2`) · **Target:** the engine
 > inside CrossOver 26.3.0 for macOS
 
 How close winhub-engine is to the engine CrossOver ships, dimension by dimension. "Measured" numbers come from
