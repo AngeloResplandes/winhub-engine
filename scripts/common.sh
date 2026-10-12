@@ -47,3 +47,28 @@ clone_pinned() {
         exit 1
     fi
 }
+
+# base_wine: unpacks the official WineHQ build into $WORK/base once and prints its wine folder
+# (bin/, lib/, share/) through the link $WORK/base-wine, a path without spaces for compiler flags.
+# The engine links against its libraries and is laid over it.
+base_wine() {
+    dir="$WORK/base/$WINE_BASE_PREFIX"
+    if [ ! -x "$dir/bin/wineserver" ]; then
+        archive="$(fetch "$WINE_BASE_URL" "$WINE_BASE_SHA256" "$(basename "$WINE_BASE_URL")")"
+        rm -rf "$WORK/base"
+        mkdir -p "$WORK/base"
+        tar -xf "$archive" -C "$WORK/base"
+    fi
+    ln -sfn "$dir" "$WORK/base-wine"
+    echo "$WORK/base-wine"
+}
+
+# cjson_dir: unpacks the pinned cJSON sources once and prints their folder.
+cjson_dir() {
+    dir="$WORK/cJSON-$CJSON_VERSION"
+    if [ ! -f "$dir/cJSON.c" ]; then
+        archive="$(fetch "$CJSON_URL" "$CJSON_SHA256" "cJSON-$CJSON_VERSION.tar.gz")"
+        tar -xzf "$archive" -C "$WORK"
+    fi
+    echo "$dir"
+}

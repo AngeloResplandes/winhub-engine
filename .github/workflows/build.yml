@@ -43,7 +43,7 @@ jobs:
   engine:
     needs: llvm
     runs-on: macos-15
-    timeout-minutes: 120
+    timeout-minutes: 300
     steps:
       - uses: actions/checkout@v6
       - name: Versões
@@ -51,17 +51,25 @@ jobs:
       - name: Rosetta 2
         run: /usr/sbin/softwareupdate --install-rosetta --agree-to-license || true
       - name: Ferramentas
-        run: brew install mingw-w64 bison meson ninja
+        run: brew install mingw-w64 bison meson ninja freetype gnutls sdl2 glslang
+      - name: Testes do winhubcompat
+        run: ./scripts/test-compatdb.sh
+      - name: Assinatura do banco de compatibilidade
+        run: swift scripts/compatdb.swift verify
       - name: Restaurar o LLVM
         uses: actions/cache/restore@v5
         with:
           path: work/llvm-darwin
           key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
           fail-on-cache-miss: true
-      - name: Wine (winemac.so com o patch do DXMT)
+      - name: Wine (fontes LGPL do CrossOver + patches)
         run: ./scripts/build-wine.sh
+      - name: winhubcompat
+        run: ./scripts/build-winhubcompat.sh
       - name: DXMT
         run: ./scripts/build-dxmt.sh
+      - name: DXVK
+        run: ./scripts/build-dxvk.sh
       - name: cabextract
         run: ./scripts/build-cabextract.sh
       - name: Empacotar
@@ -70,7 +78,7 @@ jobs:
         with:
           name: winhub-engine-${{ github.sha }}
           path: work/dist
-      - name: Teste de fumaça (D3D11 via DXMT)
+      - name: Teste de fumaça (D3D11 via DXMT e DXVK, escolhidos pelo winhubcompat)
         run: ./scripts/smoke-test.sh
       - name: Publicar release
         if: startsWith(github.ref, 'refs/tags/wine-')
@@ -83,5 +91,5 @@ jobs:
             exit 1
           fi
           gh release create "$GITHUB_REF_NAME" work/dist/* \
-            --title "Wine $WINE_VERSION + WinHub r$ENGINE_REVISION" \
+            --title "Wine $WINE_VERSION (fontes do CrossOver) + WinHub r$ENGINE_REVISION" \
             --notes-file work/dist/winhub-manifests.json

@@ -1,0 +1,30 @@
+From: WinHub <noreply@winhub.invalid>
+Subject: [PATCH] mscoree, appwiz.cpl: Use wine-mono 11.3.0.
+
+The engine is laid over the official WineHQ macOS build, which ships wine-mono 11.3.0
+in share/wine/mono. Keep in step with WINE_BASE_URL in versions.env.
+---
+diff -ru a/dlls/appwiz.cpl/addons.c b/dlls/appwiz.cpl/addons.c
+--- a/dlls/appwiz.cpl/addons.c	2026-10-11 20:56:20
++++ b/dlls/appwiz.cpl/addons.c	2026-10-11 20:56:22
+@@ -56,7 +56,7 @@
+ #define GECKO_SHA "???"
+ #endif
+ 
+-#define MONO_VERSION "10.4.1"
++#define MONO_VERSION "11.3.0"
+ #if defined(__i386__) || defined(__x86_64__)
+ #define MONO_ARCH "x86"
+ #define MONO_SHA "071f4b2887e1c97a11d791ff3d65be9429eed6dec4c2708888bfd546ba358e23"
+diff -ru a/dlls/mscoree/mscoree_private.h b/dlls/mscoree/mscoree_private.h
+--- a/dlls/mscoree/mscoree_private.h	2026-10-11 20:56:21
++++ b/dlls/mscoree/mscoree_private.h	2026-10-11 20:56:22
+@@ -45,7 +45,7 @@
+ extern HRESULT assembly_get_vtable_fixups(ASSEMBLY *assembly, VTableFixup **fixups, DWORD *count);
+ extern HRESULT assembly_get_native_entrypoint(ASSEMBLY *assembly, NativeEntryPointFunc *func);
+ 
+-#define WINE_MONO_VERSION "10.4.1"
++#define WINE_MONO_VERSION "11.3.0"
+ 
+ /* Mono embedding */
+ typedef struct _MonoDomain MonoDomain;

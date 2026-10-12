@@ -1,45 +1,30 @@
-# Plano: sincronização rápida (msync) para o Wine 11 no macOS
+# msync (sincronização rápida) no Wine 11 para macOS
 
-Status: **planejado, não iniciado**. Começa quando um jogo testado no WinHub mostrar gargalo de CPU
-causado pela sincronização. O Hollow Knight, por exemplo, roda a 60 FPS com folga e não precisa disso.
+Status: **resolvido com as fontes do CrossOver** (motor r2). Este arquivo guarda o histórico do plano.
 
-## Por que não dá para só aplicar o msync antigo
+## Como ficou
 
-- O [wine-msync](https://github.com/marzent/wine-msync) (LGPL-2.1) tem cerca de 176 KB de patch e o último
-  alvo é o Wine 9.15 (agosto de 2024).
-- O Wine 10/11 reorganizou a sincronização: agora há uma camada de **sincronização dentro do processo**
-  (`inproc_sync`), em `dlls/ntdll/unix/sync.c` e `server/inproc_sync.c`. O único backend dela usa o
-  `/dev/ntsync` do kernel Linux (`linux/ntsync.h`), que não existe no macOS.
-- Portar o patch antigo linha a linha brigaria com essa camada nova. O caminho limpo é **um backend
-  novo para ela**, no lugar do `/dev/ntsync`.
+As fontes LGPL do Wine 11.0 que a CodeWeavers publica para o CrossOver já trazem o msync como backend
+da camada de sincronização dentro do processo (`inproc_sync`) do Wine 10/11:
 
-## Desenho proposto
+- `server/msync.c`, `server/inproc_sync.c`: objetos na memória compartilhada entre os processos da
+  garrafa, com portas Mach para acordar quem espera;
+- `dlls/ntdll/unix/msync.c`: operações no próprio processo; `msync_init()` é chamado em
+  `start_main_thread`;
+- ligado por `WINEMSYNC=1`. Servidor e processos precisam concordar: o `ntdll` recusa um processo sem
+  `WINEMSYNC` quando o `wineserver` foi aberto com ele.
 
-1. **Objetos:** cada semáforo, mutex e evento do NT vira um registro numa área de memória compartilhada
-   entre os processos da garrafa (criada pelo wineserver, como no msync), com um semáforo Mach para
-   acordar quem espera.
-2. **Operações rápidas sem o wineserver:** `NtReleaseSemaphore`, `NtSetEvent`, `NtResetEvent`,
-   `NtReleaseMutant` e esperas por um único objeto resolvem tudo no próprio processo (operações
-   atômicas na memória compartilhada + `semaphore_signal`/`semaphore_timedwait`, ou `__ulock_wait2`
-   quando houver).
-3. **Esperas por vários objetos (`WaitForMultipleObjects`, inclusive "wait all"):** a parte difícil.
-   Primeira versão: esperar no processo com tentativa e nova checagem; casos raros ("wait all" com
-   mutexes abandonados, APCs) continuam passando pelo wineserver, como hoje.
-4. **Integração:** o backend responde às mesmas chamadas `inproc_*` que o ntsync, ligado por
-   `WINEMSYNC=1`. O WinHub já tem a chave por garrafa (`Bottle.msync`) e só a mostra quando o motor
-   declara `msync` em `features`.
+O motor compila essa árvore inteira (`scripts/build-wine.sh`) e declara `msync` em `features`; o WinHub
+liga `WINEMSYNC=1` por garrafa (`Bottle.msync`). Ao mudar a opção, a garrafa precisa ser encerrada
+(`wineserver -k`) antes de abrir programas de novo.
 
-## Etapas
+## Plano original (substituído)
 
-1. Ler a camada `inproc_sync` do Wine 11.18 e listar o contrato exato que o backend precisa cumprir.
-2. Protótipo só com eventos e semáforos, atrás de `WINEMSYNC=1`.
-3. Testes: os testes de sincronização do próprio Wine (`dlls/ntdll/tests/sync.c`,
-   `dlls/kernel32/tests/sync.c`) com e sem `WINEMSYNC`, mais um teste de estresse entre processos.
-4. Mutexes, "wait all" e abandono de mutex.
-5. Medição com um jogo limitado por CPU (FPS e tempo de quadro com e sem `WINEMSYNC`) antes de
-   declarar `msync` no `engine.json` e no manifesto.
+A ideia era escrever do zero um backend para a `inproc_sync` no lugar do `/dev/ntsync` do Linux, porque
+o [wine-msync](https://github.com/marzent/wine-msync) parou no Wine 9.15. A árvore da CodeWeavers faz
+exatamente isso, então o trabalho não é mais necessário.
 
-## Critério para começar
+## O que falta medir
 
-Um jogo do relatório de compatibilidade do WinHub em que o perfil (Instruments, ou `WINEDEBUG=+server`)
-mostre tempo relevante em chamadas de sincronização ao wineserver.
+Um jogo limitado por CPU (FPS e tempo de quadro com e sem `WINEMSYNC=1`), e os testes de sincronização
+do Wine (`dlls/ntdll/tests/sync.c`, `dlls/kernel32/tests/sync.c`) com e sem `WINEMSYNC`.

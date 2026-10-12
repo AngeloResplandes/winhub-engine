@@ -1,7 +1,8 @@
 #!/bin/sh
 # Builds DXMT against $WORK/wine-build (build-wine.sh) and $WORK/llvm-darwin (build-llvm.sh).
-# wine_builtin_dll=false: d3d11/dxgi/d3d10core are ordinary ("native") DLLs that WinHub copies
-# into a bottle or a game folder, so DXMT can be chosen per bottle or per game.
+# wine_builtin_dll=true: d3d11/dxgi/d3d10core/winemetal are Wine builtin DLLs. They stay in the
+# runtime's lib/dxmt and winhubcompat.so puts that folder first in Wine's DLL search path when
+# DXMT is the backend; nothing is copied into bottles.
 # Output: $WORK/dxmt-install/{x64,x32} (64-bit build includes the winemetal unix library).
 . "$(dirname "$0")/common.sh"
 
@@ -22,13 +23,13 @@ out="$WORK/dxmt-install"
 rm -rf "$out" "$src/build64" "$src/build32"
 cd "$src"
 meson setup --cross-file build-win64.txt \
-    -Dnative_llvm_path="$WORK/llvm-darwin" -Dwine_build_path="$WORK/wine-build" -Dwine_builtin_dll=false \
+    -Dnative_llvm_path="$WORK/llvm-darwin" -Dwine_build_path="$WORK/wine-build" -Dwine_builtin_dll=true \
     --buildtype release --strip --prefix "$out/x64" build64
 meson compile -C build64 --ninja-args=-k0
 meson install -C build64
 
 meson setup --cross-file build-win32.txt \
-    -Dwine_build_path="$WORK/wine-build" -Dwine_builtin_dll=false \
+    -Dwine_build_path="$WORK/wine-build" -Dwine_builtin_dll=true \
     --buildtype release --strip --prefix "$out/x32" build32
 meson compile -C build32 --ninja-args=-k0
 meson install -C build32
