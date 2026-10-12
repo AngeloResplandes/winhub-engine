@@ -13,9 +13,10 @@ abaixo, nas versões fixadas em `versions.env`.
 | cJSON (dentro do `winhubcompat.so`) | Overlay | MIT | https://github.com/DaveGamble/cJSON · o `cJSON-<versão>.tar.gz` exato vai em cada release |
 | DXVK 1.10.3 das fontes do CrossOver (`lib/dxvk`, com os patches de `patches/dxvk`) | Overlay | zlib | https://github.com/doitsujin/dxvk · incluído no `crossover-sources-<versão>.tar.gz` |
 | Pacote oficial do Wine para macOS (base sobre a qual o overlay é aplicado: bibliotecas, wine-mono, wine-gecko) | Baixado pelo WinHub, não redistribuído aqui | LGPL-2.1 e as licenças das bibliotecas incluídas | https://github.com/Gcenx/macOS_Wine_builds |
-| DXMT v0.80 (`d3d11`, `dxgi`, `d3d10core`, `winemetal`) | Overlay | MIT (v0.80 é a última versão MIT; as seguintes são LGPL) | https://github.com/3Shain/dxmt |
+| DXMT v0.80 (`d3d11`, `dxgi`, `d3d10core`, `winemetal`; em 64 bits, `nvapi64`, `nvngx`) | Overlay | MIT (v0.80 é a última versão MIT; as seguintes são LGPL) | https://github.com/3Shain/dxmt |
 | LLVM 15 (bibliotecas ligadas estaticamente ao `winemetal.so`) | Overlay | Apache-2.0 with LLVM Exceptions | https://github.com/llvm/llvm-project |
 | DirectX headers para mingw (usados só na compilação do DXMT) | — | MIT | https://github.com/misyltoad/mingw-directx-headers |
+| Cabeçalhos do NVAPI da NVIDIA (usados para compilar o `nvapi64` do DXMT; o commit que o DXMT fixa) | Overlay (`share/winhub-engine/NVAPI-LICENSE`) | MIT | https://github.com/NVIDIA/nvapi |
 | cabextract (com libmspack embutida) | `cabextract-<versão>-macos.tar.xz` | GPL-3.0-or-later (libmspack: LGPL-2.1) | https://www.cabextract.org.uk · o `cabextract-<versão>.tar.gz` exato vai em cada release |
 | Runtime do mingw-w64 e libgcc (nas DLLs do DXMT e do DXVK) | Overlay | ZPL-2.1 / domínio público; GPL-3.0 com GCC Runtime Library Exception | https://www.mingw-w64.org · https://gcc.gnu.org |
 

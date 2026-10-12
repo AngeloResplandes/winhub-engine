@@ -138,6 +138,44 @@ static void test_cmdline(void)
     free(result);
 }
 
+static void test_replace_exe(void)
+{
+    struct compat_db db;
+    const struct compat_hack *found[COMPAT_HACK_COUNT];
+    struct compat_hack hack = { .type = COMPAT_HACK_REPLACE_EXE_PATH, .exe_path = "C:\\Game Dir\\game.exe" };
+    char *result;
+
+    warnings = 0;
+    CHECK(!compat_db_parse("{ \"version\": 1, \"timestamp\": 1, \"rules\": ["
+                           " { \"desc\": \"ok\", \"match\": { \"type\": \"path_suffix\", \"suffix\": \"launcher.exe\" },"
+                           "   \"hacks\": [ { \"type\": \"replace_exe_path\", \"path\": \"C:/Game Dir/game.exe\" } ] },"
+                           " { \"desc\": \"empty\", \"match\": { \"type\": \"path_suffix\", \"suffix\": \"a.exe\" },"
+                           "   \"hacks\": [ { \"type\": \"replace_exe_path\", \"path\": \"\" } ] },"
+                           " { \"desc\": \"missing\", \"match\": { \"type\": \"path_suffix\", \"suffix\": \"b.exe\" },"
+                           "   \"hacks\": [ { \"type\": \"replace_exe_path\" } ] } ] }", 1, &db));
+    CHECK(db.count == 1);
+    CHECK(warnings == 4);          /* two bad hacks and their now-empty rules */
+    compat_db_find(&db, "C:\\Game Dir\\launcher.exe", NULL, found, NULL);
+    CHECK(found[COMPAT_HACK_REPLACE_EXE_PATH] &&
+          !strcmp(found[COMPAT_HACK_REPLACE_EXE_PATH]->exe_path, "C:\\Game Dir\\game.exe"));
+    compat_db_free(&db);
+
+    /* the program name is replaced (quoted or not); the arguments stay */
+    result = compat_exe_replace_cmdline("C:\\Game Dir\\launcher.exe", "launcher.exe -windowed", &hack);
+    CHECK(result && !strcmp(result, "\"C:\\Game Dir\\game.exe\" -windowed"));
+    free(result);
+    result = compat_exe_replace_cmdline("C:\\Game Dir\\launcher.exe", "\"C:\\Game Dir\\launcher.exe\" -a \"b c\"", &hack);
+    CHECK(result && !strcmp(result, "\"C:\\Game Dir\\game.exe\" -a \"b c\""));
+    free(result);
+    result = compat_exe_replace_cmdline("C:\\Game Dir\\launcher.exe", NULL, &hack);
+    CHECK(result && !strcmp(result, "\"C:\\Game Dir\\game.exe\""));
+    free(result);
+    /* never replaces the target itself, so a rule cannot start it in a loop */
+    CHECK(!compat_exe_replace_cmdline("c:/game dir/GAME.exe", "game.exe", &hack));
+    hack.exe_path = NULL;
+    CHECK(!compat_exe_replace_cmdline("C:\\Game Dir\\launcher.exe", "launcher.exe", &hack));
+}
+
 static void write_file(const char *path, const char *text)
 {
     FILE *file = fopen(path, "w");
@@ -200,6 +238,7 @@ int main(void)
     test_choose_backend();
     test_env();
     test_cmdline();
+    test_replace_exe();
     test_load();
     if (failures) fprintf(stderr, "%d failure(s)\n", failures);
     else printf("compatdb: all tests passed\n");

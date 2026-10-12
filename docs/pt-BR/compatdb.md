@@ -112,7 +112,11 @@ e recusa um banco cujo `timestamp` não seja mais novo que o que já tem. Passos
     processos-filho recebem também no ambiente do Windows;
   - `append_cmd_line`: `append`; `insert` (logo depois do nome do programa em vez do fim);
     `required_args` / `forbidden_args` (só aplica se a linha tiver / não tiver esse texto). Não repete. Vale
-    para processos abertos por outro processo do Wine (por exemplo, jogos abertos pela Steam).
+    para processos abertos por outro processo do Wine (por exemplo, jogos abertos pela Steam);
+  - `replace_exe_path` (revisão 3): `path`, o caminho Windows de um programa a abrir no lugar do que casou
+    (`"C:\\Game\\Game.exe"`), com os mesmos argumentos. Serve para lançadores que precisam ser pulados. Como o
+    `append_cmd_line`, vale para processos abertos por outro processo do Wine, e nunca para o próprio alvo (uma
+    regra não consegue abri-lo em laço).
 
 Regras inválidas são puladas com um aviso (`WINEDEBUG=warn+winhubcompat`); um arquivo inválido é ignorado
 inteiro.
@@ -122,6 +126,11 @@ inteiro.
 Com o `d3dmetal` ativo, o `winhubcompat` também envolve o `NtCreateFile` e o `NtOpenFile` para que o
 `C:\windows\system32\nvngx.dll` (onde o DLSS procura a biblioteca da NVIDIA) abra o `nvngx.dll` do D3DMetal, que
 faz esse papel sobre o MetalFX.
+
+Com o `dxmt` (revisão 3), o `lib/dxmt` do motor também tem o `nvapi64.dll` e o `nvngx.dll` do DXMT (DLSS sobre o
+MetalFX). O Wine os acha pelo caminho de DLLs que o `winhubcompat` define, então nenhum arquivo é copiado para a
+garrafa. Eles só respondem com `DXMT_ENABLE_NVEXT=1`, que o WinHub liga por garrafa (feature `nvext`); sem isso, o
+`NvAPI_Initialize` responde "dispositivo NVIDIA não encontrado", como num Mac sem a opção.
 
 ## Testes
 

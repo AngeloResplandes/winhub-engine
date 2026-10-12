@@ -26,7 +26,7 @@ wine-gecko, que este repositório não compila.
 ```
 
 O `share/winhub-engine/engine.json` lista as versões e as `features` que o WinHub confere:
-`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`.
+`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`, `nvext` (revisão 3).
 
 ## Pipeline de build
 
