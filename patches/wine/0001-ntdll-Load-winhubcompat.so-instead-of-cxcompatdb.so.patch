@@ -1,0 +1,34 @@
+From: WinHub <noreply@winhub.invalid>
+Subject: [PATCH] ntdll: Load winhubcompat.so instead of cxcompatdb.so.
+
+CrossOver's ntdll loads a closed module, cxcompatdb.so, that picks the graphics
+backend and applies per-game settings. WinHub ships its own open module for that
+job, winhubcompat.so (src/winhubcompat in winhub-engine).
+---
+--- a/dlls/ntdll/unix/loader.c	2026-10-11 20:23:24
++++ b/dlls/ntdll/unix/loader.c	2026-10-11 20:23:24
+@@ -2243,17 +2243,18 @@
+     hook(localtime, my_localtime);
+ #endif
+ 
+-    /* CW Hack 24067 */
++    /* WinHub: winhubcompat.so picks the graphics backend and applies per-game settings.
++     * It takes the place of CrossOver's closed cxcompatdb.so (CW Hack 24067). */
+     {
+-        void *cxcompatdb = NULL;
++        void *winhubcompat = NULL;
+         char *name = NULL;
+ 
+-        asprintf( &name, "%s/cxcompatdb.so", ntdll_dir );
++        asprintf( &name, "%s/winhubcompat.so", ntdll_dir );
+         if (name)
+         {
+-            cxcompatdb = dlopen( name, RTLD_LOCAL | RTLD_LAZY );
+-            if (!cxcompatdb)
+-                WARN( "error loading cxcompatdb.so: %s\n", dlerror() );
++            winhubcompat = dlopen( name, RTLD_LOCAL | RTLD_LAZY );
++            if (!winhubcompat)
++                WARN( "error loading winhubcompat.so: %s\n", dlerror() );
+             free(name);
+         }
+     }

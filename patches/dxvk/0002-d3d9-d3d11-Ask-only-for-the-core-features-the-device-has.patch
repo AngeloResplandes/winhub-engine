@@ -1,0 +1,41 @@
+From: WinHub <noreply@winhub.invalid>
+Subject: [PATCH] d3d9, d3d11: Ask only for the core features the device has.
+
+The official MoltenVK has no geometry shaders or cull distances, so requiring
+them leaves no usable adapter on macOS. CrossOver pairs this DXVK with a MoltenVK
+that claims those features; asking only for what is there does the same job.
+---
+diff -u a/src/d3d11/d3d11_device.cpp b/src/d3d11/d3d11_device.cpp
+--- a/src/d3d11/d3d11_device.cpp	2026-10-11 21:41:14
++++ b/src/d3d11/d3d11_device.cpp	2026-10-11 21:41:14
+@@ -2026,6 +2026,13 @@
+       enabled.core.features.vertexPipelineStoresAndAtomics        = VK_TRUE;
+     }
+     
++    // MoltenVK lacks some core features (geometry shaders, cull distances...). Ask only for the
++    // ones the device has; CrossOver gets the same result from a MoltenVK that claims them.
++    auto* wanted = reinterpret_cast<VkBool32*>(&enabled.core.features);
++    auto* present = reinterpret_cast<const VkBool32*>(&supported.core.features);
++    for (size_t i = 0; i < sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32); i++)
++      wanted[i] &= present[i];
++
+     return enabled;
+   }
+   
+diff -u a/src/d3d9/d3d9_device.cpp b/src/d3d9/d3d9_device.cpp
+--- a/src/d3d9/d3d9_device.cpp	2026-10-11 21:41:14
++++ b/src/d3d9/d3d9_device.cpp	2026-10-11 21:41:14
+@@ -3972,6 +3972,13 @@
+ 
+     enabled.extNonSeamlessCubeMap.nonSeamlessCubeMap = supported.extNonSeamlessCubeMap.nonSeamlessCubeMap;
+ 
++    // MoltenVK lacks some core features (geometry shaders, cull distances...). Ask only for the
++    // ones the device has; CrossOver gets the same result from a MoltenVK that claims them.
++    auto* wanted = reinterpret_cast<VkBool32*>(&enabled.core.features);
++    auto* present = reinterpret_cast<const VkBool32*>(&supported.core.features);
++    for (size_t i = 0; i < sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32); i++)
++      wanted[i] &= present[i];
++
+     return enabled;
+   }
+ 
