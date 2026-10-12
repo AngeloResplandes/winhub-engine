@@ -58,6 +58,18 @@ Lidas nesta ordem de prioridade:
 
 O banco baixado é conferido pelo WinHub antes de ser gravado; o módulo confia no que está no disco.
 
+### Publicação e assinatura
+
+O banco publicado é este mesmo [`data/compatdb.json`](../data/compatdb.json): o WinHub baixa ele e o
+`data/compatdb.json.sig` da `main` deste repositório, confere a assinatura Ed25519 com a chave pública
+embutida no app (a mesma de [`data/compatdb-public-key.txt`](../data/compatdb-public-key.txt)) e recusa
+um banco com `timestamp` menor que o que já tem. Ao mudar as regras:
+
+1. aumente o `timestamp` (segundos desde 1970);
+2. `swift scripts/compatdb.swift sign` (usa a chave privada de `~/.winhub-signing/compatdb-ed25519.key`
+   ou de `$WINHUB_COMPATDB_KEY`, que nunca entra no repositório);
+3. faça commit dos dois arquivos. O CI roda `swift scripts/compatdb.swift verify`.
+
 Para cada tipo de ajuste vale o **primeiro** encontrado entre as regras que casam.
 
 ## Formato
