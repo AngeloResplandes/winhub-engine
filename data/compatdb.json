@@ -1,5 +1,20 @@
 {
   "version": 1,
-  "timestamp": 1791763200,
-  "rules": []
+  "timestamp": 1791903315,
+  "rules": [
+    {
+      "desc": "Dark Souls Remastered: DXMT freezes on the title screen; DXVK and D3DMetal run it (WinHub compat report, 2026-10-13)",
+      "os": "macos",
+      "match": {
+        "type": "steam_game_id",
+        "game_id": "570940"
+      },
+      "hacks": [
+        {
+          "type": "graphics_backend",
+          "backend": "dxvk"
+        }
+      ]
+    }
+  ]
 }
