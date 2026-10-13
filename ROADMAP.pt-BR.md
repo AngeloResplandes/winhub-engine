@@ -2,9 +2,9 @@
 
 # Roadmap do winhub-engine
 
-**Estágio: revisão 2**, publicada como [`wine-11.0-r2`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r2) e motor padrão do WinHub
+**Estágio: revisão 3**, publicada como [`wine-11.0-r3`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r3) e motor padrão do WinHub
 
-> **Última revisão:** 2026-10-12 · **Alvo:** o motor que vem no CrossOver 26.3.0 para macOS
+> **Última revisão:** 2026-10-13 · **Alvo:** o motor que vem no CrossOver 26.3.0 para macOS
 
 Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover-parity.md) (pesos e evidências),
 [lacunas](docs/pt-BR/gaps.md) (a lista de trabalho em ordem), [decisões](docs/pt-BR/decisions.md).
@@ -13,10 +13,10 @@ Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover
 
 | | Valor | Tipo |
 |---|---|---|
-| **Paridade do motor com o CrossOver** | **~68%** | estimado, ponderado por dimensão |
+| **Paridade do motor com o CrossOver** | **~71%** | estimado, ponderado por dimensão |
 | Direct3D 10/11 | DXMT 64/32 bits e DXVK 64 bits no feature level 11_0 | medido |
 | Direct3D 12 | só com o D3DMetal do usuário | medido |
-| Regras de compatibilidade | formato, assinatura e canal de atualização prontos; 0 regras | medido |
+| Regras de compatibilidade | formato, assinatura e canal de atualização prontos; 1 regra | medido |
 
 ## Feito
 
@@ -25,6 +25,8 @@ Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover
 - Revisão 2 (2026-10-12): Wine das fontes LGPL do CrossOver, `winhubcompat`, DXMT e DXVK como builtins escolhidas
   por processo, msync, D3DMetal do usuário, banco de regras assinado, perfil de usuário real mantido. Publicada
   como `wine-11.0-r2` e transformada no motor padrão do WinHub no mesmo dia.
+- Revisão 3 (2026-10-13): regras `replace_exe_path`, `nvapi64`/`nvngx` do DXMT (DLSS sobre o MetalFX, ligado por
+  garrafa), a primeira regra (Dark Souls Remastered → DXVK). Publicada como `wine-11.0-r3`.
 
 ## Próximos passos
 
@@ -40,3 +42,4 @@ Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover
 |---|---|
 | 2026-10-12 | Primeiro roadmap, revisão 2 do motor. |
 | 2026-10-12 | `wine-11.0-r2` publicada e transformada no motor padrão do WinHub. |
+| 2026-10-13 | `wine-11.0-r3` publicada; paridade ~71%. |
