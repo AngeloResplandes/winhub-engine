@@ -104,7 +104,9 @@ e recusa um banco cujo `timestamp` não seja mais novo que o que já tem. Passos
 - `match`:
   - `path_suffix`: o fim do caminho Windows do programa (`\` ou `/`), sem diferenciar maiúsculas, a partir do
     começo de um nome de pasta ou arquivo (`game.exe` não casa com `notgame.exe`);
-  - `steam_game_id`: o valor de `SteamGameId` no ambiente (a Steam define ao abrir um jogo).
+  - `steam_game_id`: o valor de `SteamGameId` no ambiente Unix do processo. A Steam define no ambiente
+    **Windows** do jogo, que o Wine não copia para o Unix, então na revisão 3 essas regras não casam com jogos
+    abertos pela Steam (achado em 15/10/2026); use `path_suffix` para jogos até o motor ler o ambiente Windows.
 - `hacks`:
   - `graphics_backend`: `backend` (`wined3d`, `dxmt`, `dxvk`, `d3dmetal`) e `force` opcional;
   - `dll_overrides`: uma lista no formato do `WINEDLLOVERRIDES` (`"d3d11=n,b"`);

@@ -2,7 +2,7 @@
 
 # Paridade com o motor do CrossOver
 
-> **Última revisão:** 2026-10-13 · **Motor:** revisão 3 (`wine-11.0-r3`) · **Alvo:** o motor que
+> **Última revisão:** 2026-10-15 · **Motor:** revisão 3 (`wine-11.0-r3`) · **Alvo:** o motor que
 > vem no CrossOver 26.3.0 para macOS
 
 O quanto o winhub-engine se aproxima do motor que o CrossOver traz, dimensão por dimensão. Números "medidos" vêm
@@ -28,7 +28,7 @@ de testes deste repositório; os "estimados" são avaliação, com o motivo ao l
 | Escolha do backend por processo | 10% | módulo fechado, regras cifradas | `winhubcompat`, regras abertas, mesmas decisões e ordem, inclusive a troca do caminho do executável | 100% | estimado |
 | Direct3D 10/11 | 20% | DXMT v0.72+, DXVK 1.10.3 (com o MoltenVK deles), D3DMetal | DXMT v0.80 64/32 bits, DXVK 1.10.3 só 64 bits, D3DMetal se o usuário tiver | 85% | casos medidos, peso estimado |
 | Direct3D 12 | 15% | D3DMetal 3.0 incluído | D3DMetal só do Game Porting Toolkit do usuário; vkd3d do Wine nos outros casos | 30% | estimado |
-| Regras de compatibilidade (conteúdo) | 10% | banco curado por jogo, atualizado online | o formato e o canal de atualização assinado existem; 1 regra | 5% | medido (1 regra) |
+| Regras de compatibilidade (conteúdo) | 10% | banco curado por jogo, atualizado online | o formato e o canal de atualização assinado existem; 2 regras | 5% | medido (2 regras) |
 | Vídeos dos jogos (GStreamer, H.264) | 5% | GStreamer e plug-ins incluídos | não compilados; o pacote oficial não tem decodificador H.264 | 0% | medido (erros no log) |
 | DLSS / APIs da NVIDIA | 5% | `nvngx`/`nvapi64` no DXMT e no D3DMetal, redirecionamento do `nvngx` | redirecionamento do `nvngx` com o D3DMetal; `nvapi64`/`nvngx` do DXMT, ligados por garrafa; ainda não testado num jogo com DLSS | 80% | estimado |
 | **Ponderado** | 100% | | | **~71%** | estimado |

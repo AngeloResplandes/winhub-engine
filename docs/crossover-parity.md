@@ -2,7 +2,7 @@
 
 # Parity with CrossOver's engine
 
-> **Last reviewed:** 2026-10-13 · **Engine:** revision 3 (`wine-11.0-r3`) · **Target:** the engine
+> **Last reviewed:** 2026-10-15 · **Engine:** revision 3 (`wine-11.0-r3`) · **Target:** the engine
 > inside CrossOver 26.3.0 for macOS
 
 How close winhub-engine is to the engine CrossOver ships, dimension by dimension. "Measured" numbers come from
@@ -28,7 +28,7 @@ is described in [Reverse engineering](reverse-engineering.md); the work list is 
 | Backend choice per process | 10% | closed module, encrypted rules | `winhubcompat`, open rules, same decisions and order, including executable-path replacement | 100% | estimated |
 | Direct3D 10/11 | 20% | DXMT v0.72+, DXVK 1.10.3 (with their MoltenVK), D3DMetal | DXMT v0.80 64/32-bit, DXVK 1.10.3 64-bit only, D3DMetal if the user has it | 85% | measured cases, estimated weight |
 | Direct3D 12 | 15% | D3DMetal 3.0 bundled | D3DMetal only from the user's Game Porting Toolkit; Wine's vkd3d otherwise | 30% | estimated |
-| Compatibility rules (content) | 10% | curated per-game database, updated online | the format and the signed update channel exist; 1 rule | 5% | measured (1 rule) |
+| Compatibility rules (content) | 10% | curated per-game database, updated online | the format and the signed update channel exist; 2 rules | 5% | measured (2 rules) |
 | Game videos (GStreamer, H.264) | 5% | GStreamer and plug-ins bundled | not built; the official build has no H.264 decoder | 0% | measured (log errors) |
 | DLSS / NVIDIA APIs | 5% | `nvngx`/`nvapi64` in DXMT and D3DMetal, `nvngx` redirect | `nvngx` redirect with D3DMetal; DXMT's `nvapi64`/`nvngx`, on per bottle; not tried in a DLSS game yet | 80% | estimated |
 | **Weighted** | 100% | | | **~71%** | estimated |
