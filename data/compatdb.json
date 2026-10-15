@@ -1,13 +1,27 @@
 {
   "version": 1,
-  "timestamp": 1791903315,
+  "timestamp": 1792093393,
   "rules": [
     {
-      "desc": "Dark Souls Remastered: DXMT freezes on the title screen; DXVK and D3DMetal run it (WinHub compat report, 2026-10-13)",
+      "desc": "Dark Souls Remastered: DXMT freezes on the title screen; DXVK and D3DMetal run it (WinHub compat report, 2026-10-13). Matched by path: Steam's SteamGameId does not reach the engine",
       "os": "macos",
       "match": {
-        "type": "steam_game_id",
-        "game_id": "570940"
+        "type": "path_suffix",
+        "suffix": "DARK SOULS REMASTERED\\DarkSoulsRemastered.exe"
+      },
+      "hacks": [
+        {
+          "type": "graphics_backend",
+          "backend": "dxvk"
+        }
+      ]
+    },
+    {
+      "desc": "Skyrim Special Edition: DXMT closes the game before the title screen; DXVK runs it (WinHub compat report, 2026-10-15)",
+      "os": "macos",
+      "match": {
+        "type": "path_suffix",
+        "suffix": "Skyrim Special Edition\\SkyrimSE.exe"
       },
       "hacks": [
         {
