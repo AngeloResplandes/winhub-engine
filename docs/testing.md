@@ -30,6 +30,7 @@ presents 30 frames:
 | DXVK asked for by a 32-bit program | `winhubcompat` falls back to `dxmt`, which passes |
 | NVIDIA extensions (`tests/nvapi-smoke.c`, DXMT) | with `DXMT_ENABLE_NVEXT=1`, `nvapi64` loads, `NvAPI_Initialize` succeeds and `system32\nvngx.dll` opens DXMT's; without it, `NvAPI_Initialize` refuses |
 | `replace_exe_path` | a local rule makes `cmd` start the 64-bit test instead of a 32-bit "launcher"; the trace shows `replacing` and the test passes |
+| `steam_game_id` | `cmd` sets `SteamGameId` in its Windows environment only, as Steam does, and starts the 64-bit test; a local rule matching that id picks DXVK and the test passes |
 | The bottle | `system32` only has Wine's own `d3d11`, `dxgi`, `d3d10core`, `winemetal` |
 
 `SMOKE_BACKENDS="dxmt"` limits the backends. The CI runs the full test.

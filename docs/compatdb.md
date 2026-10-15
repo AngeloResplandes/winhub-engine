@@ -104,7 +104,9 @@ and refuses a database whose `timestamp` is not newer than the one it has. Steps
 - `match`:
   - `path_suffix`: the end of the program's Windows path (`\` or `/`), ignoring case, starting at a folder or
     file name boundary (`game.exe` does not match `notgame.exe`);
-  - `steam_game_id`: the value of `SteamGameId` in the environment (Steam sets it when it starts a game).
+  - `steam_game_id`: the value of `SteamGameId` in the program's Windows environment, where Steam sets it when it
+    starts a game, or else in its Unix environment. Revisions 1 to 3 read only the Unix one, which Wine does not
+    fill from the Windows one, so there these rules do not match games Steam starts (fixed in revision 4).
 - `hacks`:
   - `graphics_backend`: `backend` (`wined3d`, `dxmt`, `dxvk`, `d3dmetal`) and optional `force`;
   - `dll_overrides`: a list in `WINEDLLOVERRIDES` syntax (`"d3d11=n,b"`);

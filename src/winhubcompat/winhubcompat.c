@@ -170,16 +170,6 @@ static WCHAR *strv_to_env_block( char **strv, SIZE_T *size_ret )
     return block;
 }
 
-static const char *strv_lookup( char **strv, const char *name )
-{
-    size_t len = strlen( name );
-    unsigned int i;
-
-    for (i = 0; strv && strv[i]; i++)
-        if (!strncasecmp( strv[i], name, len ) && strv[i][len] == '=') return strv[i] + len + 1;
-    return NULL;
-}
-
 static void set_nvngx_target( const char *dll_dir );
 
 static const char *rule_name( const struct compat_rule *rule )
@@ -339,12 +329,17 @@ static void apply_in_process( void )
     const struct compat_hack *found[COMPAT_HACK_COUNT];
     const struct compat_rule *rule[COMPAT_HACK_COUNT];
     RTL_USER_PROCESS_PARAMETERS *params = NtCurrentTeb()->Peb->ProcessParameters;
-    const char *steam_game_id = getenv( "SteamGameId" );
-    char *image = NULL;
+    const char *steam_game_id;
+    char *image = NULL, **env;
     unsigned int i;
 
     if (params && params->ImagePathName.Buffer)
         image = wide_to_utf8( params->ImagePathName.Buffer, params->ImagePathName.Length / sizeof(WCHAR) );
+    /* Steam sets SteamGameId in the game's Windows environment, which Wine does not copy to the
+     * Unix one; the Unix one still counts for programs started with it from outside Wine. */
+    env = env_block_to_strv( params ? params->Environment : NULL );
+    steam_game_id = compat_env_get( (const char *const *)env, "SteamGameId" );
+    if (!steam_game_id || !*steam_game_id) steam_game_id = getenv( "SteamGameId" );
     TRACE( "program %s, SteamGameId %s\n", debugstr_a(image), debugstr_a(steam_game_id) );
     compat_db_find( &db, image, steam_game_id, found, rule );
 
@@ -358,6 +353,7 @@ static void apply_in_process( void )
             setenv( found[COMPAT_HACK_ENV_VARS]->names[i], found[COMPAT_HACK_ENV_VARS]->values[i], 1 );
     }
     set_graphics_backend( found[COMPAT_HACK_GRAPHICS_BACKEND], rule[COMPAT_HACK_GRAPHICS_BACKEND] );
+    compat_strv_free( env );
     free( image );
 }
 
@@ -413,7 +409,7 @@ static NTSTATUS hooked_NtCreateUserProcess( HANDLE *process_handle, HANDLE *thre
     copy = *params;
     image = wide_to_utf8( params->ImagePathName.Buffer, params->ImagePathName.Length / sizeof(WCHAR) );
     env = env_block_to_strv( params->Environment );
-    compat_db_find( &db, image, strv_lookup( env, "SteamGameId" ), found, rule );
+    compat_db_find( &db, image, compat_env_get( (const char *const *)env, "SteamGameId" ), found, rule );
 
     if (found[COMPAT_HACK_REPLACE_EXE_PATH] && ps_attr)
     {

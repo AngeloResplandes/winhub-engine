@@ -115,6 +115,18 @@ static void test_env(void)
     compat_strv_free(result);
 }
 
+static void test_env_get(void)
+{
+    const char *env[] = { "Path=C:\\windows", "SteamGameIdX=1", "STEAMGAMEID=489830", "SteamGameId=2", NULL };
+    const char *empty[] = { NULL };
+
+    CHECK(compat_env_get(env, "SteamGameId") && !strcmp(compat_env_get(env, "SteamGameId"), "489830"));
+    CHECK(compat_env_get(env, "PATH") && !strcmp(compat_env_get(env, "PATH"), "C:\\windows"));
+    CHECK(!compat_env_get(env, "Steam"));            /* a prefix of a name is not that name */
+    CHECK(!compat_env_get(empty, "SteamGameId"));
+    CHECK(!compat_env_get(NULL, "SteamGameId"));
+}
+
 static void test_cmdline(void)
 {
     struct compat_hack hack = { .type = COMPAT_HACK_APPEND_CMD_LINE, .append = "-dx11" };
@@ -237,6 +249,7 @@ int main(void)
     test_invalid_files();
     test_choose_backend();
     test_env();
+    test_env_get();
     test_cmdline();
     test_replace_exe();
     test_load();

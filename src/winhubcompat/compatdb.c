@@ -543,6 +543,15 @@ static int env_name_matches(const char *entry, const char *name)
     return !strncasecmp(entry, name, len) && entry[len] == '=';
 }
 
+const char *compat_env_get(const char *const *env, const char *name)
+{
+    unsigned int i;
+
+    for (i = 0; env && env[i]; i++)
+        if (env_name_matches(env[i], name)) return env[i] + strlen(name) + 1;
+    return NULL;
+}
+
 char **compat_env_apply(const char *const *env, const struct compat_hack *hack)
 {
     unsigned int count = 0, out = 0, i, j;
