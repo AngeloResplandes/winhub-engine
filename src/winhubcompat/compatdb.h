@@ -110,6 +110,9 @@ enum compat_backend compat_choose_backend(enum compat_backend user, const struct
 /* New NULL-terminated environment ("NAME=VALUE" strings) with the hack's variables set,
  * replacing existing ones (names compare without case, as on Windows). Free with compat_strv_free. */
 char **compat_env_apply(const char *const *env, const struct compat_hack *hack);
+/* Value of the first NAME=VALUE entry for name (compared without case, as on Windows), or NULL.
+ * env may be NULL. */
+const char *compat_env_get(const char *const *env, const char *name);
 void compat_strv_free(char **strv);
 
 /* New command line with the hack applied, or NULL when it does not apply or is already there. */

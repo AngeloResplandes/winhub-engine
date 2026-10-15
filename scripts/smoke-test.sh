@@ -3,7 +3,8 @@
 # overlay unpacked over it) and checks it: winhubcompat.so is loaded and picks the backend asked
 # for, and a Direct3D 11 program reaches feature level 11_0 through DXMT (64- and 32-bit) and DXVK
 # (64-bit; a 32-bit program asking for DXVK falls back to DXMT), with no DLL copied into the bottle.
-# A local replace_exe_path rule must make a 32-bit program start the 64-bit test instead, and DXMT's
+# A local replace_exe_path rule must make a 32-bit program start the 64-bit test instead, a local
+# steam_game_id rule must match a program whose SteamGameId is only in its Windows environment, and DXMT's
 # nvapi64/nvngx must answer only with DXMT_ENABLE_NVEXT=1.
 # SMOKE_BACKENDS (default "dxmt dxvk") picks the backends to test.
 . "$(dirname "$0")/common.sh"
@@ -73,6 +74,23 @@ RULES="$WORK/smoke-rules.json" BACKEND=dxmt DEBUG="-all,trace+winhubcompat" \
     wine cmd /c 'C:\winhub-test\launcher.exe' b000 > "$log" 2>&1 || true
 grep -E '^(OK|FAIL)|replacing' "$log" || true
 grep -q 'smoke launcher: replacing' "$log" || { echo "replace_exe_path was not applied" >&2; status=1; }
+grep -q '^OK' "$log" || status=1
+
+# Steam sets SteamGameId in the game's Windows environment only: cmd does the same here, and a local
+# steam_game_id rule must still pick the game's backend (DXVK, where auto would pick DXMT).
+echo "== steam_game_id"
+cat > "$WORK/smoke-steam-rules.json" <<'RULES'
+{ "version": 1, "rules": [ { "desc": "smoke steam game",
+  "match": { "type": "steam_game_id", "game_id": "4242" },
+  "hacks": [ { "type": "graphics_backend", "backend": "dxvk" } ] } ] }
+RULES
+log="$WORK/smoke-steam.log"
+RULES="$WORK/smoke-steam-rules.json" BACKEND=auto DEBUG="-all,trace+winhubcompat" \
+    wine cmd /c 'set SteamGameId=4242&& C:\winhub-test\game.exe b000' > "$log" 2>&1 || true
+grep -E '^(OK|FAIL)|SteamGameId|smoke steam game|as the graphics backend' "$log" || true
+grep -q 'SteamGameId "4242"' "$log" || { echo "SteamGameId was not read from the Windows environment" >&2; status=1; }
+grep -q 'smoke steam game: graphics backend dxvk' "$log" || { echo "the steam_game_id rule was not applied" >&2; status=1; }
+grep -q 'using dxvk as the graphics backend' "$log" || { echo "winhubcompat did not pick dxvk" >&2; status=1; }
 grep -q '^OK' "$log" || status=1
 
 for nvext in on off; do
