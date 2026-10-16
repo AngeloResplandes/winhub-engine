@@ -23,9 +23,11 @@ versions.env            every pinned input (SHA-256 or commit); bump ENGINE_REVI
 patches/wine|dxmt|dxvk  small patches with a "why" header, applied by the build scripts
 src/winhubcompat/       compatdb.c (pure C: rules, backend choice, env, command line) + winhubcompat.c (ntdll glue)
 scripts/                build-*.sh (build-gstreamer.sh before build-wine.sh), package.sh, smoke-test.sh, test-compatdb.sh,
-                        compatdb.swift (sign/verify rules), make-test-video.swift (the smoke test's H.264/AAC MP4)
+                        compatdb.swift (sign/verify rules), make-test-video.swift (the smoke test's H.264/AAC MP4),
+                        build-dxmt-d3d12-spike.sh (D3D12 spike only; not in the smoke test or the CI)
 data/                   compatdb.json (+ .sig, signed), compatdb-public-key.txt
-tests/                  compatdb-test.c, d3d11-smoke.c, nvapi-smoke.c, mf-smoke.c (Media Foundation video)
+tests/                  compatdb-test.c, d3d11-smoke.c, nvapi-smoke.c, mf-smoke.c (Media Foundation video);
+                        d3d12-smoke.c, vulkan-features.c (D3D12 spike tools; not in the smoke test or the CI)
 docs/, docs/pt-BR/      documentation (English, Brazilian Portuguese); also the mdBook sources
 book/en, book/pt-BR     mdBook configuration; .github/workflows/docs.yml builds and publishes the site
 ```

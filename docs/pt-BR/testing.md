@@ -59,6 +59,14 @@ quando o leitor é liberado depois de uma amostra de áudio também é esperado.
 A primeira execução varre os plug-ins e grava o registro em `~/Library/Caches/WinHub/gstreamer/`, com o `HOME`
 verdadeiro; apague o arquivo para ver a varredura de novo.
 
+### As ferramentas do spike de Direct3D 12
+
+O spike de Direct3D 12 (2026-10-16, [decisão](decisions.md#2026-10-16-o-direct3d-12-continua-com-o-d3dmetal)) deixou
+três ferramentas no repositório, em `tests/` e `scripts/`: `tests/d3d12-smoke.c` (device, feature level, limpar e
+apresentar), `tests/vulkan-features.c` (lista os recursos do Vulkan de que o vkd3d-proton precisa) e
+`scripts/build-dxmt-d3d12-spike.sh` (compila um DXMT com Direct3D 12 num commit próprio e fixo). Elas não fazem parte
+do teste de fumaça e o CI não as compila.
+
 ## Ver o que o winhubcompat fez
 
 ```bash
