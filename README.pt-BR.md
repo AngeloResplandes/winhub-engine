@@ -54,10 +54,10 @@ Detalhes: [Arquitetura](docs/pt-BR/architecture.md) e [winhubcompat](docs/pt-BR/
 
 | | |
 |---|---|
-| Revisão do motor | 4, versão [`wine-11.0-r4`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r4), o motor padrão do WinHub |
-| Paridade com o motor do CrossOver | **~71%** (estimado, [detalhes](docs/pt-BR/crossover-parity.md)) |
-| Testado | DXMT 64/32 bits e DXVK 64 bits no feature level 11_0 do D3D (teste de fumaça); Hollow Knight pelo DXMT com a Steam (2026-10-12) |
-| Maiores lacunas | D3D12 sem D3DMetal, banco de regras pequeno (2 regras), vídeos dos jogos ([todas as lacunas](docs/pt-BR/gaps.md)) |
+| Revisão do motor | 5, versão [`wine-11.0-r5`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r5), o motor padrão do WinHub |
+| Paridade com o motor do CrossOver | **~74%** (estimado, [detalhes](docs/pt-BR/crossover-parity.md)) |
+| Testado | DXMT 64/32 bits e DXVK 64 bits no feature level 11_0 do D3D (teste de fumaça); vídeo MP4 H.264/AAC pelo Media Foundation (teste de fumaça); Hollow Knight pelo DXMT com a Steam (2026-10-12) |
+| Maiores lacunas | D3D12 sem D3DMetal, banco de regras pequeno (2 regras), vídeos em jogos Unity com Direct3D 11 ([todas as lacunas](docs/pt-BR/gaps.md)) |
 
 ## Compilação
 

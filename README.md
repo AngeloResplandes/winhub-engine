@@ -54,10 +54,10 @@ Details: [Architecture](docs/architecture.md) and [winhubcompat](docs/compatdb.m
 
 | | |
 |---|---|
-| Engine revision | 4, release [`wine-11.0-r4`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r4), WinHub's default engine |
-| Parity with CrossOver's engine | **~71%** (estimated, [details](docs/crossover-parity.md)) |
-| Tested | DXMT 64/32-bit and DXVK 64-bit at D3D feature level 11_0 (smoke test); Hollow Knight through DXMT with Steam (2026-10-12) |
-| Biggest gaps | D3D12 without D3DMetal, small rule database (2 rules), game videos ([all gaps](docs/gaps.md)) |
+| Engine revision | 5, release [`wine-11.0-r5`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r5), WinHub's default engine |
+| Parity with CrossOver's engine | **~74%** (estimated, [details](docs/crossover-parity.md)) |
+| Tested | DXMT 64/32-bit and DXVK 64-bit at D3D feature level 11_0 (smoke test); H.264/AAC MP4 video through Media Foundation (smoke test); Hollow Knight through DXMT with Steam (2026-10-12) |
+| Biggest gaps | D3D12 without D3DMetal, small rule database (2 rules), videos in Direct3D 11 Unity games ([all gaps](docs/gaps.md)) |
 
 ## Build
 
