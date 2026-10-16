@@ -104,7 +104,7 @@ GStreamer, então o motor o compila e o leva junto. H.264 e AAC são decodificad
 | O `winegstreamer.so` leva um rpath para `work/gstreamer-install` | o `gstreamer-1.0.pc` tem `-Wl,-rpath,${libdir}` | o `build-wine.sh` o tira de `GSTREAMER_LIBS` e confere o resultado |
 | O `winegstreamer.so` pede a `libintl.dylib` sem versão | o `-lintl` do `glib-2.0.pc` acha a cópia do pacote base em `work/deps/lib` | `-L$WORK/gst-deps/lib` acrescentado ao `GSTREAMER_LIBS`; o `build-wine.sh` recusa qualquer dependência que não seja `@rpath/`, `/usr/lib/` ou `/System/Library/` |
 | O `configure` não consegue usar o GStreamer: `libffi` | o `gobject-2.0.pc` exige o `libffi.pc` | o `PKG_CONFIG_LIBDIR` também inclui `work/gst-deps/pkgconfig` |
-| O `strip` invalida as assinaturas das bibliotecas do GStreamer | o `build-gstreamer.sh` as assina ad hoc | `package.sh`: remover a assinatura, `strip -x`, assinar de novo |
+| O `strip` do Xcode 16 falha com "link edit information does not fill the `__LINKEDIT` segment" nas bibliotecas do GStreamer (CI) | o `codesign --remove-signature` deixa um buraco no `__LINKEDIT`; o Xcode mais novo aceita | o `build-gstreamer.sh` não assina (código x86_64 roda sem assinatura no Rosetta); o `package.sh` roda `strip -x` e depois assina ad hoc |
 | O `vtdec` parece faltar no log do teste de fumaça | o `WINE:4` registra nomes longos ("Apple VideoToolbox decoder (hardware only)") | também `GST_ELEMENT_FACTORY:4`, que registra `creating element "vtdec_hw"` |
 
 ## Integração contínua

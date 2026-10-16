@@ -99,9 +99,9 @@ for file in "$o/lib/wine/x86_64-unix/winegstreamer.so" "$o"/lib/*.dylib "$o"/lib
             || { echo "$file needs $dep, which is not shipped" >&2; exit 1; }
     done
 done
-# strip would invalidate the ad-hoc signatures build-gstreamer.sh made: drop them, strip, sign again.
+# build-gstreamer.sh leaves them unsigned: strip, then sign (strip invalidates a signature, and Xcode 16's
+# strip rejects a file whose signature was removed with codesign --remove-signature).
 for file in "$o"/lib/*.dylib "$o"/lib/gstreamer-1.0/*.dylib; do
-    codesign --remove-signature "$file"
     strip -x "$file"
     codesign -f -s - "$file" 2>/dev/null
 done

@@ -118,8 +118,9 @@ rpath_names() {
                 otool -l "$f" | grep -q 'path @loader_path/.. ' || set -- "$@" -add_rpath @loader_path/.. ;;
         esac
         [ $# -gt 0 ] || continue
+        # No signature here: the linker leaves x86_64 code unsigned and Rosetta runs it so; package.sh
+        # signs after strip (Xcode 16's strip rejects a file whose signature was removed).
         install_name_tool "$@" "$f" 2>/dev/null
-        codesign -f -s - "$f" 2>/dev/null
     done
 }
 
