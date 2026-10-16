@@ -242,6 +242,41 @@ static void test_load(void)
     rmdir(dir);
 }
 
+static void test_gst_paths(void)
+{
+    static const char prefix[] = "/Users/me/Library/Caches/WinHub/gstreamer/registry-";
+    static const char suffix[] = ".x86_64.bin";
+    char *plugins = NULL, *registry = NULL, *other_plugins = NULL, *other_registry = NULL;
+    char *again_plugins = NULL, *again_registry = NULL;
+
+    CHECK(compat_gst_paths("/rt/a", "/Users/me", &plugins, &registry));
+    CHECK(plugins && !strcmp(plugins, "/rt/a/lib/gstreamer-1.0"));
+    CHECK(registry && !strncmp(registry, prefix, strlen(prefix)));
+    CHECK(registry && strlen(registry) == strlen(prefix) + 16 + strlen(suffix));
+    CHECK(registry && !strcmp(registry + strlen(registry) - strlen(suffix), suffix));
+
+    /* One registry per runtime, the same one every time. */
+    CHECK(compat_gst_paths("/rt/b", "/Users/me", &other_plugins, &other_registry));
+    CHECK(registry && other_registry && strcmp(registry, other_registry));
+    CHECK(compat_gst_paths("/rt/a", "/Users/me", &again_plugins, &again_registry));
+    CHECK(registry && again_registry && !strcmp(registry, again_registry));
+    free(plugins); free(registry); free(other_plugins); free(other_registry);
+    free(again_plugins); free(again_registry);
+
+    /* Without HOME there is no registry path (GStreamer keeps its default). */
+    CHECK(compat_gst_paths("/rt/a", NULL, &plugins, &registry));
+    CHECK(plugins && !strcmp(plugins, "/rt/a/lib/gstreamer-1.0") && !registry);
+    free(plugins);
+    CHECK(compat_gst_paths("/rt/a", "", &plugins, &registry));
+    CHECK(!registry);
+    free(plugins);
+
+    /* Without the runtime folder there is nothing to set. */
+    plugins = registry = (char *)"untouched";
+    CHECK(!compat_gst_paths(NULL, "/Users/me", &plugins, &registry));
+    CHECK(!plugins && !registry);
+}
+
 int main(void)
 {
     compat_warn = count_warning;
@@ -252,6 +287,7 @@ int main(void)
     test_env_get();
     test_cmdline();
     test_replace_exe();
+    test_gst_paths();
     test_load();
     if (failures) fprintf(stderr, "%d failure(s)\n", failures);
     else printf("compatdb: all tests passed\n");

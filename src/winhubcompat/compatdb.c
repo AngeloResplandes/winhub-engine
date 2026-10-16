@@ -642,3 +642,30 @@ char *compat_exe_replace_cmdline(const char *image_path, const char *cmdline, co
     memcpy(result + path_len + 2, rest, rest_len + 1);
     return result;
 }
+
+static char *string_printf(const char *format, const char *a, const char *b)
+{
+    int len = snprintf(NULL, 0, format, a, b);
+    char *str = len < 0 ? NULL : malloc((size_t)len + 1);
+
+    if (str) snprintf(str, (size_t)len + 1, format, a, b);
+    return str;
+}
+
+int compat_gst_paths(const char *root, const char *home, char **plugin_dir, char **registry)
+{
+    unsigned long long hash = 0xcbf29ce484222325ull;  /* FNV-1a */
+    const unsigned char *p;
+    char hex[17];
+
+    *plugin_dir = *registry = NULL;
+    if (!root) return 0;
+    *plugin_dir = string_printf("%s%s", root, "/lib/gstreamer-1.0");
+    if (home && *home)
+    {
+        for (p = (const unsigned char *)root; *p; p++) hash = (hash ^ *p) * 0x100000001b3ull;
+        snprintf(hex, sizeof(hex), "%016llx", hash);
+        *registry = string_printf("%s/Library/Caches/WinHub/gstreamer/registry-%s.x86_64.bin", home, hex);
+    }
+    return 1;
+}
