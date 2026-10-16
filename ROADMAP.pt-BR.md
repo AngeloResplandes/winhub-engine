@@ -13,7 +13,7 @@ Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover
 
 | | Valor | Tipo |
 |---|---|---|
-| **Paridade do motor com o CrossOver** | **~74%** | estimado, ponderado por dimensão |
+| **Paridade do motor com o CrossOver** | **~73%** | estimado, ponderado por dimensão |
 | Direct3D 10/11 | DXMT 64/32 bits e DXVK 64 bits no feature level 11_0 | medido |
 | Direct3D 12 | só com o D3DMetal do usuário | medido |
 | Regras de compatibilidade | formato, assinatura e canal de atualização prontos; 2 regras | medido |
@@ -36,7 +36,7 @@ Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover
 
 1. **Mais regras:** uma por jogo testado nos relatórios de compatibilidade do WinHub.
 2. **Vídeos em jogos Unity com Direct3D 11:** repassar direito as texturas compartilhadas entre devices (DXMT); veja as lacunas.
-3. **Direct3D 12 sem D3DMetal:** avaliar o D3D12 do DXMT e o vkd3d-proton.
+3. **Direct3D 12 sem D3DMetal:** o spike (2026-10-16) não achou caminho jogável, então continua com o D3DMetal e o WinHub guia o usuário até o Game Porting Toolkit; candidato à r6: destravar o vkd3d do Wine no "Automático" (veja as lacunas).
 4. **DXVK em 32 bits:** acompanhar o suporte do MoltenVK a mapeamentos de memória posicionados.
 5. **Números do msync:** medir um jogo limitado pela CPU.
 
@@ -49,3 +49,4 @@ Resumo em uma página. Detalhes: [paridade com o CrossOver](docs/pt-BR/crossover
 | 2026-10-13 | `wine-11.0-r3` publicada; paridade ~71%. |
 | 2026-10-15 | `wine-11.0-r4` publicada; 2 regras; paridade ~71%. |
 | 2026-10-16 | `wine-11.0-r5` publicada (vídeos dos jogos); paridade ~74%. |
+| 2026-10-16 | Spike de Direct3D 12: continua com o D3DMetal; o "Automático" bloqueia programas D3D12 (candidato à r6); paridade ~73%. |
