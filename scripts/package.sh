@@ -1,11 +1,13 @@
 #!/bin/sh
 # Packs the release assets into $WORK/dist:
-#   winhub-wine-<wine>-r<rev>-overlay.tar.xz  the engine. WinHub removes bin/ and lib/wine/ from the
-#                                             official WineHQ build's "wine" folder and unpacks this
-#                                             over it (the base keeps its libraries, wine-mono, gecko)
+#   winhub-wine-<wine>-r<rev>-overlay.tar.xz  the engine. WinHub removes bin/, lib/wine/ and
+#                                             lib/gstreamer-1.0/ from the official WineHQ build's "wine"
+#                                             folder and unpacks this over it (the base keeps its
+#                                             libraries, wine-mono, gecko)
 #   cabextract-<ver>-macos.tar.xz             universal cabextract
-#   crossover-sources-<ver>.tar.gz, cJSON-<ver>.tar.gz, cabextract-<ver>.tar.gz,
-#   winhub-engine-r<rev>-sources.tar.xz       corresponding sources
+#   crossover-sources-<ver>.tar.gz, cJSON-<ver>.tar.gz, cabextract-<ver>.tar.gz, pcre2-<ver>.tar.bz2,
+#   pcre2_<ver>_patch.zip, gvdb-<commit>.tar.xz, winhub-engine-r<rev>-sources.tar.xz
+#                                             corresponding sources
 #   SHA256SUMS and winhub-manifests.json (entries for WinHub's runtimes.json / components.json)
 . "$(dirname "$0")/common.sh"
 
@@ -66,6 +68,44 @@ strip -x "$o/lib/dxmt/x86_64-unix/winemetal.so"
 mkdir -p "$o/lib/dxvk"
 cp -R "$WORK/dxvk-install/x86_64-windows" "$WORK/dxvk-install/i386-windows" "$o/lib/dxvk/"
 
+# GStreamer for game videos: the plug-ins winegstreamer needs in lib/gstreamer-1.0 (winhubcompat points
+# GStreamer there) and, in lib/, the libraries winegstreamer.so and those plug-ins load (their @rpath
+# closure). libintl comes from the base build, which stays in lib/; libffi, libiconv and zlib from macOS.
+# Not shipped: the other plug-ins (opengl, pbtypes), static libraries, headers, pkg-config files and tools.
+gst="$WORK/gstreamer-install"
+mkdir -p "$o/lib/gstreamer-1.0"
+for plugin in coreelements app typefindfunctions playback audioconvert audioresample videoconvertscale \
+              isomp4 audioparsers wavparse deinterlace videofilter videoparsersbad applemedia; do
+    cp "$gst/lib/gstreamer-1.0/libgst$plugin.dylib" "$o/lib/gstreamer-1.0/"
+done
+todo="$o/lib/wine/x86_64-unix/winegstreamer.so $(echo "$o"/lib/gstreamer-1.0/*.dylib)"
+while [ -n "$todo" ]; do
+    next=""
+    for file in $todo; do
+        for dep in $(otool -L "$file" | awk 'NR > 1 && $1 ~ /^@rpath\// { sub("@rpath/", "", $1); print $1 }'); do
+            { [ -e "$o/lib/$dep" ] || [ ! -e "$gst/lib/$dep" ]; } && continue
+            cp -L "$gst/lib/$dep" "$o/lib/$dep"
+            next="$next $o/lib/$dep"
+        done
+    done
+    todo="$next"
+done
+# Every @rpath library they load (and their own install names) must be next to them, in the overlay's
+# lib/ or in the base build's.
+base_lib="$(base_wine)/lib"
+for file in "$o/lib/wine/x86_64-unix/winegstreamer.so" "$o"/lib/*.dylib "$o"/lib/gstreamer-1.0/*.dylib; do
+    for dep in $(otool -L "$file" | awk 'NR > 1 && $1 ~ /^@rpath\// { sub("@rpath/", "", $1); print $1 }'); do
+        [ -e "$(dirname "$file")/$dep" ] || [ -e "$o/lib/$dep" ] || [ -e "$base_lib/$dep" ] \
+            || { echo "$file needs $dep, which is not shipped" >&2; exit 1; }
+    done
+done
+# strip would invalidate the ad-hoc signatures build-gstreamer.sh made: drop them, strip, sign again.
+for file in "$o"/lib/*.dylib "$o"/lib/gstreamer-1.0/*.dylib; do
+    codesign --remove-signature "$file"
+    strip -x "$file"
+    codesign -f -s - "$file" 2>/dev/null
+done
+
 e="$o/share/winhub-engine"
 mkdir -p "$e"
 cp "$ROOT/LICENSE" "$ROOT/THIRD_PARTY_NOTICES.md" "$e/"
@@ -74,7 +114,10 @@ cp "$WORK/dxmt/LICENSE" "$e/DXMT-LICENSE"
 cp "$WORK/dxmt/external/nvapi/License.txt" "$e/NVAPI-LICENSE"
 cp "$WORK/dxvk-cx$CROSSOVER_VERSION/LICENSE" "$e/DXVK-LICENSE"
 cp "$(cjson_dir)/LICENSE" "$e/cJSON-LICENSE"
-features='["dxmt", "dxvk", "msync", "backend-dispatch", "compatdb", "nvext"]'
+cp "$WORK/gst-src/glib/COPYING" "$e/GLIB-LICENSE"
+cp "$WORK/gst-src/gstreamer/subprojects/gstreamer/COPYING" "$e/GSTREAMER-LICENSE"
+cp "$WORK/gst-src/glib/subprojects/pcre2-$PCRE2_VERSION/LICENCE" "$e/PCRE2-LICENSE"
+features='["dxmt", "dxvk", "msync", "backend-dispatch", "compatdb", "nvext", "gstreamer"]'
 cat > "$e/engine.json" <<EOF
 {
   "revision": $ENGINE_REVISION,
@@ -83,6 +126,7 @@ cat > "$e/engine.json" <<EOF
   "dxmt": "$DXMT_TAG",
   "dxmtCommit": "$DXMT_COMMIT",
   "dxvk": "$(cat "$WORK/dxvk-cx$CROSSOVER_VERSION/RELEASE")",
+  "gstreamer": "$GSTREAMER_VERSION",
   "features": $features
 }
 EOF
@@ -94,13 +138,21 @@ cp "$WORK/cabextract-install/cabextract" "$stage/$cab/"
 cp "$WORK/$cab/COPYING" "$stage/$cab/COPYING"
 tar -cJf "$dist/$cab-macos.tar.xz" -C "$stage" "$cab"
 
-# Sources: the exact upstream archives and this repository (patches, winhubcompat, scripts).
-cp "$DL/crossover-sources-$CROSSOVER_VERSION.tar.gz" "$DL/cJSON-$CJSON_VERSION.tar.gz" "$DL/$cab.tar.gz" "$dist/"
+# Sources: the exact upstream archives and this repository (patches, winhubcompat, scripts). The
+# CrossOver archive holds GLib and GStreamer; GLib's pcre2 (archive and meson wrap) and gvdb (a git
+# subproject, archived at its pinned commit) come separately.
+cp "$DL/crossover-sources-$CROSSOVER_VERSION.tar.gz" "$DL/cJSON-$CJSON_VERSION.tar.gz" "$DL/$cab.tar.gz" \
+    "$DL/pcre2-$PCRE2_VERSION.tar.bz2" "$DL/$PCRE2_WRAP_FILE" "$dist/"
+if [ "$(git -C "$WORK/gvdb" rev-parse HEAD)" != "$GVDB_COMMIT" ]; then
+    echo "$WORK/gvdb is not at $GVDB_COMMIT; run build-gstreamer.sh" >&2
+    exit 1
+fi
+git -C "$WORK/gvdb" archive --format=tar --prefix="gvdb-$GVDB_COMMIT/" HEAD | xz -c > "$dist/gvdb-$GVDB_COMMIT.tar.xz"
 tar -cJf "$dist/winhub-engine-r$ENGINE_REVISION-sources.tar.xz" -C "$ROOT" \
     LICENSE THIRD_PARTY_NOTICES.md README.md versions.env patches src data scripts tests
 
 cd "$dist"
-shasum -a 256 ./*.tar.* | sed 's| \./| |' > SHA256SUMS
+shasum -a 256 ./*.tar.* ./*.zip | sed 's| \./| |' > SHA256SUMS
 
 sum() { shasum -a 256 "$1" | cut -d' ' -f1; }
 size() { stat -f %z "$1"; }
@@ -123,7 +175,7 @@ cat > winhub-manifests.json <<EOF
       "url": "$base/$name-overlay.tar.xz",
       "sha256": "$(sum "$name-overlay.tar.xz")",
       "size": $(size "$name-overlay.tar.xz"),
-      "replace": ["bin", "lib/wine"]
+      "replace": ["bin", "lib/wine", "lib/gstreamer-1.0"]
     }
   },
   "cabextract": {
