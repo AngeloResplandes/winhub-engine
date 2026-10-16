@@ -2,9 +2,9 @@
 
 # winhub-engine roadmap
 
-**Stage: revision 3**, released as [`wine-11.0-r3`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r3) and WinHub's default engine
+**Stage: revision 4**, released as [`wine-11.0-r4`](https://github.com/AngeloResplandes/winhub-engine/releases/tag/wine-11.0-r4) and WinHub's default engine
 
-> **Last reviewed:** 2026-10-13 · **Target:** the engine inside CrossOver 26.3.0 for macOS
+> **Last reviewed:** 2026-10-15 · **Target:** the engine inside CrossOver 26.3.0 for macOS
 
 One-page summary. Detail: [parity with CrossOver](docs/crossover-parity.md) (weights and evidence),
 [gaps](docs/gaps.md) (the ranked work list), [decisions](docs/decisions.md).
@@ -16,7 +16,7 @@ One-page summary. Detail: [parity with CrossOver](docs/crossover-parity.md) (wei
 | **Engine parity with CrossOver** | **~71%** | estimated, weighted by dimension |
 | Direct3D 10/11 | DXMT 64/32-bit and DXVK 64-bit at feature level 11_0 | measured |
 | Direct3D 12 | only with the user's D3DMetal | measured |
-| Compatibility rules | format, signing and update channel ready; 1 rule | measured |
+| Compatibility rules | format, signing and update channel ready; 2 rules | measured |
 
 ## Done
 
@@ -26,10 +26,12 @@ One-page summary. Detail: [parity with CrossOver](docs/crossover-parity.md) (wei
   `wine-11.0-r2` and made WinHub's default engine the same day.
 - Revision 3 (2026-10-13): `replace_exe_path` rules, DXMT's `nvapi64`/`nvngx` (DLSS over MetalFX, on per bottle),
   the first rule (Dark Souls Remastered → DXVK). Released as `wine-11.0-r3`.
+- Revision 4 (2026-10-15): `steam_game_id` rules match games Steam starts (the Steam ID is read from the
+  process's Windows environment). Released as `wine-11.0-r4`.
 
 ## Next
 
-1. **First rules:** one per tested game in WinHub's compatibility reports.
+1. **More rules:** one per tested game in WinHub's compatibility reports.
 2. **Game videos:** GStreamer and H.264 in the overlay.
 3. **Direct3D 12 without D3DMetal:** evaluate DXMT's D3D12 and vkd3d-proton.
 4. **DXVK in 32-bit:** follow MoltenVK's support for placed memory maps.
@@ -42,3 +44,4 @@ One-page summary. Detail: [parity with CrossOver](docs/crossover-parity.md) (wei
 | 2026-10-12 | First roadmap, engine revision 2. |
 | 2026-10-12 | `wine-11.0-r2` released and made WinHub's default engine. |
 | 2026-10-13 | `wine-11.0-r3` released; parity ~71%. |
+| 2026-10-15 | `wine-11.0-r4` released; 2 rules; parity ~71%. |
