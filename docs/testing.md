@@ -36,10 +36,6 @@ presents 30 frames:
 
 `SMOKE_BACKENDS="dxmt"` limits the backends. The CI runs the full test.
 
-The Direct3D 12 spike (2026-10-16, [decision](decisions.md#2026-10-16-direct3d-12-stays-with-d3dmetal)) left three
-tools on the `spike-d3d12` branch, outside this test: `tests/d3d12-smoke.c` (device, feature level, clear and present),
-`tests/vulkan-features.c` (lists the Vulkan features vkd3d-proton needs) and `scripts/build-dxmt-d3d12-spike.sh`.
-
 ### The video case
 
 `scripts/make-test-video.swift` writes the MP4 when the test runs (nothing is stored in Git): 15 light-gray frames at
@@ -62,6 +58,14 @@ after one audio sample is expected too.
 
 The first run scans the plug-ins and writes the registry to `~/Library/Caches/WinHub/gstreamer/`, with the real
 `HOME`; delete the file to see a scan again.
+
+### The Direct3D 12 spike tools
+
+The Direct3D 12 spike (2026-10-16, [decision](decisions.md#2026-10-16-direct3d-12-stays-with-d3dmetal)) left three
+tools in the repository, in `tests/` and `scripts/`: `tests/d3d12-smoke.c` (device, feature level, clear and present),
+`tests/vulkan-features.c` (lists the Vulkan features vkd3d-proton needs) and `scripts/build-dxmt-d3d12-spike.sh`
+(builds a DXMT with Direct3D 12 at its own pinned commit). They are not part of the smoke test and the CI does not
+build them.
 
 ## Seeing what winhubcompat did
 

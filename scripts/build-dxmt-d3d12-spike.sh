@@ -1,5 +1,5 @@
 #!/bin/sh
-# D3D12 spike only (branch spike-d3d12): builds upstream DXMT from main with its Direct3D 12
+# D3D12 spike only: builds upstream DXMT from main with its Direct3D 12
 # (src/d3d12, meson option enable_d3d12, off by default) against $WORK/wine-build and
 # $WORK/llvm-darwin, like build-dxmt.sh. Not part of the release build; versions.env is untouched.
 # DXMT after v0.80 is LGPL-2.1 (v0.80 and older were MIT).
@@ -34,8 +34,7 @@ done
 out="$WORK/dxmt-next-install"
 rm -rf "$out" "$src/build64" "$src/build32"
 cd "$src"
-# The version comes from `git describe`; keep git from finding this repository above $WORK.
-export GIT_CEILING_DIRECTORIES="$WORK"
+# The version string reads v0.1 because no tag is fetched (--depth 1 of a single commit).
 meson setup --cross-file build-win64.txt \
     -Dnative_llvm_path="$WORK/llvm-darwin" -Dwine_build_path="$WORK/wine-build" -Dwine_builtin_dll=true \
     -Denable_nvapi=true -Denable_nvngx=true -Denable_d3d12=true \

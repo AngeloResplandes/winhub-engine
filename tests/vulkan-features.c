@@ -151,6 +151,13 @@ int main(void)
         IPROC(vkGetPhysicalDeviceFeatures2);
         IPROC(vkEnumerateDeviceExtensionProperties);
 
+        if (!p_vkEnumeratePhysicalDevices || !p_vkGetPhysicalDeviceProperties || !p_vkGetPhysicalDeviceProperties2
+            || !p_vkGetPhysicalDeviceFeatures2 || !p_vkEnumerateDeviceExtensionProperties)
+        {
+            printf("FAIL vkGetInstanceProcAddr returned NULL for an instance-level function\n");
+            return 2;
+        }
+
         vr = p_vkEnumeratePhysicalDevices(inst, &npd, pdevs);
         if (vr < 0 || !npd)
         {

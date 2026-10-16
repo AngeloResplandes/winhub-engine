@@ -41,7 +41,11 @@ static HRESULT run_and_wait(void)
 {
     HANDLE event = CreateEventW(NULL, FALSE, FALSE, NULL);
     HRESULT hr;
-    ID3D12GraphicsCommandList_Close(list);
+    if (FAILED(hr = ID3D12GraphicsCommandList_Close(list)))
+    {
+        CloseHandle(event);
+        return hr;
+    }
     ID3D12CommandQueue_ExecuteCommandLists(queue, 1, (ID3D12CommandList **)&list);
     if (FAILED(hr = ID3D12CommandQueue_Signal(queue, fence, ++fence_value)))
     {
@@ -173,6 +177,7 @@ int main(int argc, char **argv)
     HRESULT hr;
     int frames = argc > 1 ? atoi(argv[1]) : 30;
 
+    if (frames < 1) return fail("frames", E_INVALIDARG);
     if (SUCCEEDED(CreateDXGIFactory2(0, &IID_IDXGIFactory4, (void **)&factory))
         && SUCCEEDED(IDXGIFactory4_EnumAdapters1(factory, 0, &adapter))
         && SUCCEEDED(IDXGIAdapter1_GetDesc1(adapter, &adapter_desc)))

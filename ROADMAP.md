@@ -35,7 +35,7 @@ One-page summary. Detail: [parity with CrossOver](docs/crossover-parity.md) (wei
 
 1. **More rules:** one per tested game in WinHub's compatibility reports.
 2. **Videos in Direct3D 11 Unity games:** pass shared textures between devices correctly (DXMT); see gaps.
-3. **Direct3D 12 without D3DMetal:** the spike (2026-10-16) found no playable path, so it stays with D3DMetal and WinHub guides users to the Game Porting Toolkit; r6 candidate: unblock Wine's vkd3d in "Automático" (see gaps).
+3. **Direct3D 12 without D3DMetal:** the spike (2026-10-16) found no playable path, so it stays with D3DMetal and WinHub guides users to the Game Porting Toolkit; r6 candidate: let Direct3D 12 programs create a device in Automatic without D3DMetal (see gaps).
 4. **DXVK in 32-bit:** follow MoltenVK's support for placed memory maps.
 5. **msync numbers:** measure a CPU-bound game.
 
@@ -48,4 +48,4 @@ One-page summary. Detail: [parity with CrossOver](docs/crossover-parity.md) (wei
 | 2026-10-13 | `wine-11.0-r3` released; parity ~71%. |
 | 2026-10-15 | `wine-11.0-r4` released; 2 rules; parity ~71%. |
 | 2026-10-16 | `wine-11.0-r5` released (game videos); parity ~74%. |
-| 2026-10-16 | Direct3D 12 spike: it stays with D3DMetal; "Automático" blocks D3D12 programs (r6 candidate); parity ~73%. |
+| 2026-10-16 | Direct3D 12 spike: it stays with D3DMetal; without D3DMetal, Automatic blocks D3D12 programs (r6 candidate); parity ~73%. |
