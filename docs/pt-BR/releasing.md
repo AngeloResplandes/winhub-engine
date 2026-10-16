@@ -9,8 +9,8 @@
 2. Faça o push de uma tag `wine-<WINE_VERSION>-r<ENGINE_REVISION>`, por exemplo `wine-11.0-r2`. A tag precisa
    bater com o `versions.env`; senão o workflow a recusa.
 3. O CI compila, roda o teste de fumaça e cria a release com o overlay, o `cabextract`, as fontes
-   correspondentes (o pacote de fontes do CrossOver, cJSON, cabextract, este repositório), o `SHA256SUMS` e o
-   `winhub-manifests.json`.
+   correspondentes (o pacote de fontes do CrossOver, cJSON, cabextract, pcre2 e o wrap dele do Meson, gvdb, este
+   repositório), o `SHA256SUMS` e o `winhub-manifests.json`.
 
 Toda versão precisa levar as fontes correspondentes: o Wine dela é LGPL.
 

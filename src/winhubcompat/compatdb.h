@@ -122,4 +122,11 @@ char *compat_cmdline_apply(const char *cmdline, const struct compat_hack *hack);
  * when the hack does not apply (image_path already is that program). cmdline may be NULL. */
 char *compat_exe_replace_cmdline(const char *image_path, const char *cmdline, const struct compat_hack *hack);
 
+/* GStreamer's plug-in folder for the runtime at root (<root>/lib/gstreamer-1.0) and a registry file of
+ * its own under <home>/Library/Caches/WinHub/gstreamer, named after a hash of root, so runtimes never
+ * share a registry with each other or with another GStreamer. *registry is NULL when home is NULL or
+ * empty. Returns 0 (both NULL) when root is NULL. Either output may also be NULL if memory runs out.
+ * Free both with free(). */
+int compat_gst_paths(const char *root, const char *home, char **plugin_dir, char **registry);
+
 #endif

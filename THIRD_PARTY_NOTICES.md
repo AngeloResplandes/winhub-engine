@@ -18,10 +18,16 @@ pinned in `versions.env`.
 | DirectX headers for mingw (only used to build DXMT) | — | MIT | https://github.com/misyltoad/mingw-directx-headers |
 | NVIDIA NVAPI headers (used to build DXMT's `nvapi64`; the commit DXMT pins) | Overlay (`share/winhub-engine/NVAPI-LICENSE`) | MIT | https://github.com/NVIDIA/nvapi |
 | cabextract (with bundled libmspack) | `cabextract-<version>-macos.tar.xz` | GPL-3.0-or-later (libmspack: LGPL-2.1) | https://www.cabextract.org.uk · the exact `cabextract-<version>.tar.gz` ships with every release |
+| GLib 2.78.0 and GStreamer 1.24.4 (core, plugins-base, plugins-good, plugins-bad: only the 14 plug-ins listed in `scripts/package.sh` and the libraries they need; `lib/*.dylib`, `lib/gstreamer-1.0/`) from CrossOver's sources | Overlay (`share/winhub-engine/GLIB-LICENSE`, `GSTREAMER-LICENSE`) | LGPL-2.1-or-later | https://gitlab.gnome.org/GNOME/glib · https://gstreamer.freedesktop.org · included in `crossover-sources-<version>.tar.gz` |
+| PCRE2 10.42 (built statically into GLib's `libglib`, with its Meson wrap) | Overlay (`share/winhub-engine/PCRE2-LICENSE`) | BSD-3-Clause | https://github.com/PhilipHazel/pcre2 · the exact archive and wrap ship with every release |
+| gvdb, at the commit pinned in `versions.env` (GLib's subproject, which CrossOver's archive leaves empty; built into GLib's `libgio`, which the overlay does not ship) | — | LGPL-2.1-or-later | https://gitlab.gnome.org/GNOME/gvdb · `gvdb-<commit>.tar.xz` ships with every release |
 | mingw-w64 runtime and libgcc (in the DXMT and DXVK DLLs) | Overlay | ZPL-2.1 / public domain; GPL-3.0 with the GCC Runtime Library Exception | https://www.mingw-w64.org · https://gcc.gnu.org |
 
 Apple's D3DMetal (Game Porting Toolkit) is **not** distributed. The engine only uses it when the user installed it
 and WinHub points to its folder (`WINHUB_D3DMETAL_DIR`, see [`docs/compatdb.md`](docs/compatdb.md)).
+
+Game videos are decoded by macOS's own VideoToolbox and AudioToolbox, which the engine uses but does not distribute.
+It ships no FFmpeg, x264 or GPL plug-in.
 
 CrossOver is a trademark of CodeWeavers. Windows and Direct3D are trademarks of Microsoft. Mac, macOS and Metal
 are trademarks of Apple. The names are used only to describe origin and compatibility.

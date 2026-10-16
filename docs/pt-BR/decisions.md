@@ -4,6 +4,26 @@
 
 Registro datado das decisões que deram forma ao motor, das mais novas para as mais antigas.
 
+## 2026-10-15: Vídeos dos jogos pelo GStreamer com o VideoToolbox
+
+A revisão 5 toca os vídeos dos jogos: o Media Foundation do Wine os entrega ao `winegstreamer`, que precisa do
+GStreamer, e o pacote oficial não tem (o CrossOver o inclui). O motor compila o GLib 2.78.0 e o GStreamer 1.24.4
+das fontes LGPL do CrossOver, e H.264 e AAC são decodificados pelo próprio macOS (VideoToolbox e AudioToolbox,
+pelo `applemedia` do gst-plugins-bad) em vez de pelo FFmpeg. Por quê:
+
+- os codecs são os do sistema, então o motor não redistribui nenhum decodificador com patentes nem código GPL
+  (`-Dgpl=disabled`; sem FFmpeg, gst-libav, x264 nem gst-plugins-ugly);
+- a decodificação em hardware vem de graça, e o overlay cresce só 3,7 MB compactado;
+- os únicos downloads novos são o pcre2 10.42 (o GLib precisa dele) e o gvdb num commit fixado (o pacote do
+  CrossOver o traz vazio); ambos são fixados e vão com as fontes da release.
+
+Ficam de fora: WMV/WMA, MPEG-1 e Theora, que o macOS não decodifica (veja [Lacunas](gaps.md)). Os vídeos Bink não
+são afetados: os jogos os tocam com código próprio, não pelo Media Foundation. As bibliotecas do GStreamer ficam em
+`lib/`, junto das do pacote base, então o `overlay.replace` só ganhou o `lib/gstreamer-1.0`.
+
+O `winhubcompat` define `GST_PLUGIN_SYSTEM_PATH_1_0` e `GST_REGISTRY_1_0` em vez de o WinHub fazê-lo, então um
+WinHub anterior à revisão 5 toca vídeos sem mudar nada, e os valores da própria garrafa continuam valendo.
+
 ## 2026-10-12: As extensões da NVIDIA do DXMT entram no motor, desligadas até a garrafa pedir
 
 A revisão 3 compila o `nvapi64` e o `nvngx` do DXMT (opções `enable_nvapi` e `enable_nvngx` do meson; cabeçalhos

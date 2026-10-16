@@ -50,11 +50,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Versões
-        run: grep -E '^(LLVM_COMMIT|ENGINE_REVISION|WINE_VERSION)=' versions.env >> "$GITHUB_ENV"
+        run: grep -E '^(LLVM_COMMIT|ENGINE_REVISION|WINE_VERSION|CROSSOVER_VERSION|PCRE2_SHA256|PCRE2_WRAP_SHA256|WINE_BASE_SHA256|GVDB_COMMIT)=' versions.env >> "$GITHUB_ENV"
       - name: Rosetta 2
         run: /usr/sbin/softwareupdate --install-rosetta --agree-to-license || true
       - name: Ferramentas
-        run: brew install mingw-w64 bison meson ninja freetype gnutls sdl2 glslang
+        run: brew install mingw-w64 bison meson ninja freetype gnutls sdl2 glslang pkgconf gettext
       - name: Testes do winhubcompat
         run: ./scripts/test-compatdb.sh
       - name: Assinatura do banco de compatibilidade
@@ -65,6 +65,33 @@ jobs:
           path: work/llvm-darwin
           key: llvm-darwin-x86_64-${{ env.LLVM_COMMIT }}
           fail-on-cache-miss: true
+      # build-wine.sh needs gstreamer-install and gst-deps (libffi.pc, libintl); package.sh copies the licenses
+      # from gst-src and archives gvdb and the pcre2 files for the release sources.
+      - name: Restaurar o GStreamer
+        id: gst-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: |
+            work/gstreamer-install
+            work/gst-src
+            work/gst-deps
+            work/gvdb
+            work/downloads/pcre2*
+          key: gstreamer-x86_64-${{ env.CROSSOVER_VERSION }}-${{ env.PCRE2_SHA256 }}-${{ env.PCRE2_WRAP_SHA256 }}-${{ env.WINE_BASE_SHA256 }}-${{ env.GVDB_COMMIT }}-${{ hashFiles('scripts/build-gstreamer.sh') }}
+      - name: GLib e GStreamer (vídeos dos jogos)
+        if: steps.gst-cache.outputs.cache-hit != 'true'
+        run: ./scripts/build-gstreamer.sh
+      - name: Guardar o GStreamer
+        if: steps.gst-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: |
+            work/gstreamer-install
+            work/gst-src
+            work/gst-deps
+            work/gvdb
+            work/downloads/pcre2*
+          key: gstreamer-x86_64-${{ env.CROSSOVER_VERSION }}-${{ env.PCRE2_SHA256 }}-${{ env.PCRE2_WRAP_SHA256 }}-${{ env.WINE_BASE_SHA256 }}-${{ env.GVDB_COMMIT }}-${{ hashFiles('scripts/build-gstreamer.sh') }}
       - name: Wine (fontes LGPL do CrossOver + patches)
         run: ./scripts/build-wine.sh
       - name: winhubcompat
@@ -81,7 +108,7 @@ jobs:
         with:
           name: winhub-engine-${{ github.sha }}
           path: work/dist
-      - name: Teste de fumaça (D3D11 via DXMT e DXVK, escolhidos pelo winhubcompat)
+      - name: Teste de fumaça (D3D11 via DXMT e DXVK, vídeo H.264/AAC pelo Media Foundation)
         run: ./scripts/smoke-test.sh
       - name: Publicar release
         if: startsWith(github.ref, 'refs/tags/wine-')

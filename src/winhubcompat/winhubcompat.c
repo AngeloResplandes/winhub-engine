@@ -37,6 +37,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/sysctl.h>
 #include <unistd.h>
 
@@ -576,6 +577,24 @@ static void *hook_syscall( void *function, void *wrapper, const char *name )
     return NULL;
 }
 
+/* Wine's winegstreamer finds the GStreamer this runtime ships (lib/gstreamer-1.0) and keeps its plug-in
+ * registry apart from any other GStreamer on the Mac. Values already set (a bottle's own) win. */
+static void set_gstreamer_paths( void )
+{
+    char *plugins, *registry;
+    struct stat st;
+
+    if (!compat_gst_paths( root_dir, getenv( "HOME" ), &plugins, &registry )) return;
+    if (plugins && !stat( plugins, &st ) && S_ISDIR( st.st_mode ))
+    {
+        setenv( "GST_PLUGIN_SYSTEM_PATH_1_0", plugins, 0 );
+        if (registry) setenv( "GST_REGISTRY_1_0", registry, 0 );
+        TRACE( "gstreamer plug-ins in %s, registry %s\n", debugstr_a(plugins), debugstr_a(registry) );
+    }
+    free( plugins );
+    free( registry );
+}
+
 static void __attribute__((constructor)) winhubcompat_init( void )
 {
     /* WINHUB_HOME: WinHub's data folder, with the downloaded database (already verified by WinHub).
@@ -588,6 +607,7 @@ static void __attribute__((constructor)) winhubcompat_init( void )
     if (home && *home) downloaded = path_join( home, "compat/compatdb.json" );
     compat_db_load( builtin, downloaded, local && *local ? local : NULL, &db );
     TRACE( "runtime %s, %u rules (database timestamp %.0f)\n", debugstr_a(root_dir), db.count, db.timestamp );
+    set_gstreamer_paths();
     free( builtin );
     free( downloaded );
 

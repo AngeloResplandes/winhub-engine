@@ -13,13 +13,15 @@ is described in [Reverse engineering](reverse-engineering.md); the work list is 
 
 | Number | Value | Kind |
 |---|---|---|
-| **Engine parity** (weighted, below) | **~71%** | estimated |
+| **Engine parity** (weighted, below) | **~75%** | estimated |
 | Direct3D 10/11 on Apple silicon | DXMT 64/32-bit and DXVK 64-bit reach feature level 11_0 | measured (smoke test) |
 | Direct3D 12 | only with the user's own D3DMetal | measured with a local Game Porting Toolkit |
 | Real game | Hollow Knight (Unity 6, D3D11) runs through DXMT at feature level 11.1, Steam with saved login | measured 2026-10-12 |
 | Real games, played by script | Dark Souls Remastered, Hollow Knight, Lethal Company and PEAK playable with D3DMetal; Dark Souls also with DXVK (DXMT freezes on it) | measured 2026-10-13 ([WinHub's reports](https://github.com/AngeloResplandes/winhub/tree/main/docs/compat)) |
 
 ## By dimension
+
+The game videos row and the total include revision 5, which is not released yet; the other rows are revision 4.
 
 | Dimension | Weight | CrossOver 26.3 | winhub-engine r4 | % | Kind |
 |---|---:|---|---|---:|---|
@@ -29,9 +31,9 @@ is described in [Reverse engineering](reverse-engineering.md); the work list is 
 | Direct3D 10/11 | 20% | DXMT v0.72+, DXVK 1.10.3 (with their MoltenVK), D3DMetal | DXMT v0.80 64/32-bit, DXVK 1.10.3 64-bit only, D3DMetal if the user has it | 85% | measured cases, estimated weight |
 | Direct3D 12 | 15% | D3DMetal 3.0 bundled | D3DMetal only from the user's Game Porting Toolkit; Wine's vkd3d otherwise | 30% | estimated |
 | Compatibility rules (content) | 10% | curated per-game database, updated online | the format and the signed update channel exist; 2 rules | 5% | measured (2 rules) |
-| Game videos (GStreamer, H.264) | 5% | GStreamer and plug-ins bundled | not built; the official build has no H.264 decoder | 0% | measured (log errors) |
+| Game videos (GStreamer, H.264) | 5% | GStreamer and plug-ins bundled | GStreamer 1.24.4 built for x86_64, with macOS's own H.264 (VideoToolbox) and AAC (AudioToolbox) decoders; MP4 only, no WMV/WMA, MPEG-1 or Theora | 80% | estimated; H.264/AAC MP4 measured in the smoke test |
 | DLSS / NVIDIA APIs | 5% | `nvngx`/`nvapi64` in DXMT and D3DMetal, `nvngx` redirect | `nvngx` redirect with D3DMetal; DXMT's `nvapi64`/`nvngx`, on per bottle; not tried in a DLSS game yet | 80% | estimated |
-| **Weighted** | 100% | | | **~71%** | estimated |
+| **Weighted** | 100% | | | **~75%** | estimated |
 
 ## Differences that are choices, not gaps
 
@@ -51,3 +53,4 @@ is described in [Reverse engineering](reverse-engineering.md); the work list is 
 | 2026-10-12 | First assessment, engine revision 2. |
 | 2026-10-13 | Revision 3: backend choice 90% → 100% (`replace_exe_path`), DLSS 50% → 80%; total ~71%. |
 | 2026-10-15 | Revision 4: `steam_game_id` rules match games Steam starts; 2 rules; total ~71%. |
+| 2026-10-15 | Revision 5 (in progress): game videos 0% → 80% (GStreamer with VideoToolbox; H.264/AAC MP4 decoded in the smoke test); total ~71% → ~75%. |

@@ -12,7 +12,8 @@ O `winhubcompat.so` (código em [`src/winhubcompat`](https://github.com/AngeloRe
    garrafa;
 4. aplica variáveis de ambiente e acréscimos de linha de comando aos processos-filho (via
    `NtCreateUserProcess`);
-5. com o D3DMetal, manda o `nvngx.dll` do DLSS para a cópia do próprio D3DMetal.
+5. com o D3DMetal, manda o `nvngx.dll` do DLSS para a cópia do próprio D3DMetal;
+6. aponta o `winegstreamer` para os plug-ins do GStreamer do motor (vídeos dos jogos).
 
 ## Variáveis de ambiente
 
@@ -24,6 +25,8 @@ O `winhubcompat.so` (código em [`src/winhubcompat`](https://github.com/AngeloRe
 | `WINHUB_HOME` | WinHub | A pasta de dados do WinHub; o banco baixado fica em `compat/compatdb.json` |
 | `WINHUB_COMPAT_RULES` | WinHub | O arquivo com as regras da garrafa (por exemplo, o backend escolhido para um jogo) |
 | `WINHUB_ACTIVE_GRAPHICS_BACKEND`, `CX_ACTIVE_GRAPHICS_BACKEND` | winhubcompat | O backend escolhido; o segundo é lido pelo `win32u` da CodeWeavers |
+| `GST_PLUGIN_SYSTEM_PATH_1_0` | winhubcompat | O `lib/gstreamer-1.0` do motor, quando existe. Um valor já definido (o da própria garrafa) é mantido |
+| `GST_REGISTRY_1_0` | winhubcompat | O registro de plug-ins do GStreamer, `~/Library/Caches/WinHub/gstreamer/registry-<hash do caminho do motor>.x86_64.bin`. Um valor já definido é mantido |
 
 Para ver o que ele fez: `WINEDEBUG=+winhubcompat`. A linha `using <backend> as the graphics backend` diz o
 backend de cada processo.

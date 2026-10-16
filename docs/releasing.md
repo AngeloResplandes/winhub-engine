@@ -9,8 +9,8 @@
 2. Push a tag `wine-<WINE_VERSION>-r<ENGINE_REVISION>`, for example `wine-11.0-r2`. The tag must match
    `versions.env`; the workflow refuses it otherwise.
 3. The CI builds, runs the smoke test and creates the release with the overlay, `cabextract`, the
-   corresponding sources (CrossOver's source archive, cJSON, cabextract, this repository), `SHA256SUMS` and
-   `winhub-manifests.json`.
+   corresponding sources (CrossOver's source archive, cJSON, cabextract, pcre2 and its Meson wrap, gvdb, this
+   repository), `SHA256SUMS` and `winhub-manifests.json`.
 
 Every release must carry the corresponding sources: the Wine in it is LGPL.
 

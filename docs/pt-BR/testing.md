@@ -31,9 +31,33 @@ quadros:
 | Extensões da NVIDIA (`tests/nvapi-smoke.c`, DXMT) | com `DXMT_ENABLE_NVEXT=1`, o `nvapi64` carrega, o `NvAPI_Initialize` dá certo e o `system32\nvngx.dll` abre o do DXMT; sem ela, o `NvAPI_Initialize` recusa |
 | `replace_exe_path` | uma regra local faz o `cmd` abrir o teste de 64 bits no lugar de um "lançador" de 32 bits; o trace mostra `replacing` e o teste passa |
 | `steam_game_id` | o `cmd` define `SteamGameId` só no seu ambiente Windows, como a Steam faz, e abre o teste de 64 bits; uma regra local com esse id escolhe o DXVK e o teste passa |
+| Vídeo de jogo (`tests/mf-smoke.c`) | o Media Foundation abre um MP4 e o lê até o fim: `OK h264 128x96 frames=15 …` e `OK aac rate=44100 channels=2`; o log mostra o `winhubcompat` apontando o GStreamer para o motor, o H.264 decodificado pelo `vtdec_hw` (ou `vtdec`) e o AAC pelo `atdec` |
 | A garrafa | o `system32` só tem as `d3d11`, `dxgi`, `d3d10core` e `winemetal` do próprio Wine |
 
 `SMOKE_BACKENDS="dxmt"` limita os backends. O CI roda o teste completo.
+
+### O caso do vídeo
+
+O `scripts/make-test-video.swift` escreve o MP4 quando o teste roda (nada fica no Git): 15 quadros cinza-claro de
+128x96 e um segundo de AAC estéreo mudo, codificados pelo AVFoundation do próprio macOS, para o arquivo não
+depender dos decodificadores testados. O `tests/mf-smoke.c` o lê com o source reader do Media Foundation, e o
+teste confere os decodificadores pelo log:
+
+```bash
+GST_DEBUG=WINE:4,GST_ELEMENT_FACTORY:4 wine mf-smoke64.exe 'C:\video.mp4'
+```
+
+O `GST_ELEMENT_FACTORY:4` imprime `creating element "vtdec_hw"` e `creating element "atdec"`, os nomes das
+fábricas; só com `WINE:4` saem nomes longos ("Apple VideoToolbox decoder (hardware only)"). A leitura é limitada
+(1000 amostras) e precisa chegar ao fim do fluxo, então um decodificador travado falha em vez de pendurar.
+
+Duas linhas a cada vídeo aberto são esperadas, inofensivas e vêm do Wine oficial:
+`GStreamer-Video-CRITICAL **: <hora>: gst_video_info_from_caps: assertion 'gst_caps_is_fixed (caps)' failed`.
+A decodificação está correta; elas também aparecem nos logs dos usuários. Um aviso de esvaziamento do `atdec`
+quando o leitor é liberado depois de uma amostra de áudio também é esperado.
+
+A primeira execução varre os plug-ins e grava o registro em `~/Library/Caches/WinHub/gstreamer/`, com o `HOME`
+verdadeiro; apague o arquivo para ver a varredura de novo.
 
 ## Ver o que o winhubcompat fez
 

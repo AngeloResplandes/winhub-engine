@@ -65,11 +65,11 @@ macOS em Apple silicon (com Rosetta 2) ou Intel, Xcode 16+ (a partir do Xcode 26
 `xcodebuild -downloadComponent MetalToolchain`), e:
 
 ```bash
-brew install mingw-w64 bison meson ninja freetype gnutls sdl2 glslang cmake
+brew install mingw-w64 bison meson ninja freetype gnutls sdl2 glslang cmake pkgconf gettext
 ```
 
 ```bash
-./scripts/build-llvm.sh && ./scripts/build-wine.sh && ./scripts/build-winhubcompat.sh
+./scripts/build-llvm.sh && ./scripts/build-gstreamer.sh && ./scripts/build-wine.sh && ./scripts/build-winhubcompat.sh
 ./scripts/build-dxmt.sh && ./scripts/build-dxvk.sh && ./scripts/build-cabextract.sh
 ./scripts/package.sh && ./scripts/smoke-test.sh
 ```

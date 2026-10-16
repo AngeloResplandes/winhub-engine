@@ -19,20 +19,25 @@ which this repository does not build.
 │   │   └── i386-windows/    32-bit Windows-side DLLs (+ winemetal.dll), run through WoW64
 │   ├── dxmt/                DXMT v0.80, builtin DLLs: x86_64-windows, i386-windows, x86_64-unix
 │   ├── dxvk/                DXVK 1.10.3, builtin DLLs: x86_64-windows, i386-windows
-│   └── *.dylib              libraries of the official build (MoltenVK, freetype, gnutls, SDL2…)
+│   ├── gstreamer-1.0/       the 14 GStreamer plug-ins game videos need (revision 5)
+│   └── *.dylib              libraries of the official build (MoltenVK, freetype, gnutls, SDL2…) and,
+│                            from revision 5, GLib and GStreamer's (libglib, libgstreamer, libgstvideo…)
 └── share/
     ├── wine/                wine.inf, nls, fonts (ours) + wine-mono, wine-gecko (official build)
     └── winhub-engine/       engine.json, compatdb.json (built-in rules), licenses
 ```
 
 `share/winhub-engine/engine.json` lists the versions and the `features` WinHub checks:
-`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`, `nvext` (revision 3).
+`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`, `nvext` (revision 3), `gstreamer` (revision 5; the
+GStreamer version is also in `engine.json`).
 
 ## Build pipeline
 
 ```
 crossover-sources-26.3.0.tar.gz ──► sources/wine + patches/wine ──► build-wine.sh ──► wine-install/
         (CodeWeavers, LGPL)        └─ sources/dxvk + patches/dxvk ──► build-dxvk.sh ──► dxvk-install/
+crossover-sources (glib, gstreamer) + pcre2 + gvdb ───────────────► build-gstreamer.sh ──► gstreamer-install/
+                                          (before build-wine.sh, which links winegstreamer against it)
 DXMT v0.80 (MIT) + patches/dxmt + LLVM 15 ───────────────────────► build-dxmt.sh ──► dxmt-install/
 src/winhubcompat + cJSON ─────────────────────────────────────────► build-winhubcompat.sh
                                                     package.sh ──► dist/ (overlay, sources, manifests)
@@ -55,6 +60,20 @@ All inputs are pinned by SHA-256 or commit in
 - **Our patches:** load `winhubcompat.so` instead of CrossOver's closed module, use the official build's
   wine-mono, and keep upstream Wine's user name, profile folder and Desktop link. See [Patches](patches.md).
 
+## Game videos
+
+Games play cut-scenes through Media Foundation, which Wine hands to `winegstreamer`, which uses GStreamer. The
+official build has no GStreamer libraries or plug-ins, so the engine builds `winegstreamer.so` and ships GStreamer
+([`build-gstreamer.sh`](building.md#what-build-gstreamersh-does-and-why)):
+
+- **H.264 and AAC are decoded by macOS**: `vtdec` (VideoToolbox, hardware when available) and `atdec`
+  (AudioToolbox), from gst-plugins-bad's `applemedia`. There is no FFmpeg, x264 or GPL plug-in.
+- `lib/gstreamer-1.0/` holds 14 plug-ins, a fixed list in `package.sh`: the MP4 demuxer, parsers, converters and
+  `decodebin`'s playback bin, besides `applemedia`. GLib, GStreamer and their libraries sit in `lib/`, next to
+  the base build's; they find each other (and the base build's `libintl`) through `@rpath`. The libraries are
+  the `@rpath` dependency closure of `winegstreamer.so` plus those plug-ins, not copied wholesale.
+- Only MP4 with H.264 and AAC is covered. Other formats are in [Gaps](gaps.md).
+
 ## winhubcompat
 
 `ntdll.so` loads `lib/wine/x86_64-unix/winhubcompat.so` in every Wine process, after mapping `ntdll.dll`
@@ -72,6 +91,18 @@ and before any other DLL. Its constructor:
 
 It also sets `CX_ACTIVE_GRAPHICS_BACKEND`, which CodeWeavers' `win32u` reads. Rule format and the full list of
 variables: [winhubcompat and compatibility rules](compatdb.md).
+
+### GStreamer's paths
+
+When `lib/gstreamer-1.0` exists, the constructor sets two variables before any other DLL loads:
+
+- `GST_PLUGIN_SYSTEM_PATH_1_0`: the runtime's own `lib/gstreamer-1.0`, so GStreamer never loads plug-ins from
+  elsewhere on the Mac;
+- `GST_REGISTRY_1_0`: the plug-in registry, a file in `~/Library/Caches/WinHub/gstreamer/` named after a hash of the
+  runtime's path, so different runtimes and other GStreamers on the Mac do not share it.
+
+They are set in the engine, not by WinHub, so a WinHub that predates revision 5 plays videos without any change.
+A value that is already set (a bottle's own) is left alone.
 
 ### How the backend is chosen
 
@@ -99,7 +130,8 @@ for DLLs in `lib/wine`; that is why `winemetal.dll` also ships in `lib/wine`, as
 
 ## How WinHub uses the engine
 
-- Installs the base build and the overlay, honouring `overlay.replace` (`["bin", "lib/wine"]`).
+- Installs the base build and the overlay, honouring `overlay.replace`
+  (`["bin", "lib/wine", "lib/gstreamer-1.0"]` from revision 5).
 - Sets `WINHUB_GRAPHICS_BACKEND` from the bottle, `WINHUB_COMPAT_RULES` to `<bottle>/compat-rules.json`,
   `WINHUB_HOME`, and the D3DMetal variables when the user pointed WinHub at a Game Porting Toolkit.
 - Downloads `data/compatdb.json` from this repository only when its Ed25519 signature checks out.

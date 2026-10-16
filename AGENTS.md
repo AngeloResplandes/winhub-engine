@@ -22,9 +22,10 @@ The repository holds scripts, patches and sources only; CI builds and publishes 
 versions.env            every pinned input (SHA-256 or commit); bump ENGINE_REVISION when it, patches/ or src/ change
 patches/wine|dxmt|dxvk  small patches with a "why" header, applied by the build scripts
 src/winhubcompat/       compatdb.c (pure C: rules, backend choice, env, command line) + winhubcompat.c (ntdll glue)
-scripts/                build-*.sh, package.sh, smoke-test.sh, test-compatdb.sh, compatdb.swift (sign/verify rules)
+scripts/                build-*.sh (build-gstreamer.sh before build-wine.sh), package.sh, smoke-test.sh, test-compatdb.sh,
+                        compatdb.swift (sign/verify rules), make-test-video.swift (the smoke test's H.264/AAC MP4)
 data/                   compatdb.json (+ .sig, signed), compatdb-public-key.txt
-tests/                  compatdb-test.c, d3d11-smoke.c
+tests/                  compatdb-test.c, d3d11-smoke.c, nvapi-smoke.c, mf-smoke.c (Media Foundation video)
 docs/, docs/pt-BR/      documentation (English, Brazilian Portuguese); also the mdBook sources
 book/en, book/pt-BR     mdBook configuration; .github/workflows/docs.yml builds and publishes the site
 ```

@@ -52,6 +52,18 @@ inc() { echo "-I$(brew --prefix "$1")/include${2:-}"; }
 # Unix libraries find the base build's dylibs in lib/ (lib/wine/x86_64-unix/../../), like the base itself.
 rpath="-Wl,-rpath,@loader_path/../../ -Wl,-rpath,@loader_path/../lib"
 
+# GStreamer for game videos (scripts/build-gstreamer.sh); winegstreamer finds it in lib/ at run time.
+# gobject-2.0.pc requires libffi.pc, which build-gstreamer.sh writes to $WORK/gst-deps/pkgconfig (the SDK's).
+# gstreamer-1.0.pc adds an rpath to its build folder, which is dropped. -lintl (from glib-2.0.pc) must
+# find $WORK/gst-deps/lib's libintl, whose install name is @rpath/libintl.8.dylib, before $deps' (the
+# base's, whose install name is a bare libintl.dylib that dyld would not find).
+gst="$WORK/gstreamer-install"
+test -f "$gst/lib/pkgconfig/gstreamer-1.0.pc" || { echo "run build-gstreamer.sh first" >&2; exit 1; }
+gst_pc() {
+    PKG_CONFIG_LIBDIR="$gst/lib/pkgconfig:$WORK/gst-deps/pkgconfig" pkgconf "$@" \
+        gstreamer-1.0 gstreamer-video-1.0 gstreamer-audio-1.0 gstreamer-tag-1.0
+}
+
 mkdir -p "$build"
 cd "$build"
 x86 /usr/bin/env MACOSX_DEPLOYMENT_TARGET=10.15 PATH="$BISON_DIR:$PATH" \
@@ -61,10 +73,12 @@ x86 /usr/bin/env MACOSX_DEPLOYMENT_TARGET=10.15 PATH="$BISON_DIR:$PATH" \
     FREETYPE_CFLAGS="$(inc freetype /freetype2)" FREETYPE_LIBS="-L$deps -lfreetype" \
     GNUTLS_CFLAGS="$(inc gnutls) $(inc nettle) $(inc libtasn1) $(inc p11-kit /p11-kit-1)" GNUTLS_LIBS="-L$deps -lgnutls" \
     SDL2_CFLAGS="$(inc sdl2 /SDL2)" SDL2_LIBS="-L$deps -lSDL2" \
+    GSTREAMER_CFLAGS="$(gst_pc --cflags)" \
+    GSTREAMER_LIBS="$(gst_pc --libs | sed 's/-Wl,-rpath,[^ ]*//g') -L$WORK/gst-deps/lib" \
     LIBS="-L$deps" \
     --prefix=/ --enable-archs=i386,x86_64 --disable-tests \
     --with-freetype --with-gnutls --with-sdl --with-vulkan \
-    --without-x --without-gstreamer --without-cups --without-gphoto --without-sane --without-krb5 \
+    --without-x --with-gstreamer --without-cups --without-gphoto --without-sane --without-krb5 \
     --without-netapi --without-pcap --without-usb --without-v4l2 --without-pulse --without-oss \
     --without-alsa --without-capi --without-unwind --without-inotify --without-ffmpeg
 
@@ -85,6 +99,18 @@ x86 make install DESTDIR="$install" >/dev/null
 for f in lib/wine/x86_64-unix/winemac.so lib/wine/x86_64-unix/ntdll.so; do
     test -f "$install/$f" || { echo "missing $f" >&2; exit 1; }
 done
+test -f "$install/lib/wine/x86_64-unix/winegstreamer.so" || { echo "missing winegstreamer.so" >&2; exit 1; }
+otool -L "$install/lib/wine/x86_64-unix/winegstreamer.so" | grep -q '@rpath/libgstreamer-1.0.0.dylib' \
+    || { echo "winegstreamer.so does not link the engine's GStreamer" >&2; exit 1; }
+if otool -L "$install/lib/wine/x86_64-unix/winegstreamer.so" | sed 1d \
+        | grep -v -E '^[[:space:]]*(@rpath/|/usr/lib/|/System/Library/)' | grep -q .; then
+    echo "winegstreamer.so links a library outside @rpath and the system" >&2
+    exit 1
+fi
+if otool -l "$install/lib/wine/x86_64-unix/winegstreamer.so" | grep -E -q "^[[:space:]]*path ($WORK|/opt/homebrew|/usr/local)"; then
+    echo "winegstreamer.so has a build or Homebrew rpath" >&2
+    exit 1
+fi
 nm -gU "$install/lib/wine/x86_64-unix/winemac.so" | grep -q ' _macdrv_functions$'
 nm -gU "$install/lib/wine/x86_64-unix/ntdll.so" | grep -q ' _prepend_dll_path$'
 echo "Wine $WINE_VERSION (CrossOver $CROSSOVER_VERSION sources) installed in $install"
