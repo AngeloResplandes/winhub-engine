@@ -4,6 +4,43 @@
 
 Dated record of the decisions that shaped the engine, newest first.
 
+## 2026-10-16: Direct3D 12 stays with D3DMetal
+
+A one-day spike looked for a way to play Direct3D 12 without the user's own D3DMetal (Game Porting Toolkit), and
+found none. Playable Direct3D 12 still needs D3DMetal, and WinHub's next step is the app-side guide to the Game
+Porting Toolkit. Measured on revision 5, on Apple silicon with MoltenVK 1.4.0:
+
+- **Wine's vkd3d** (the build's own): with Wine's `dxgi` it creates a device at feature level 11_0, without geometry
+  shaders, stream output, depth clip or cull distance (MoltenVK lacks them); not tried with a real game. In Automatic
+  without D3DMetal (and in 32-bit processes) DXMT's `dxgi` comes first and vkd3d cannot create a device: DXMT v0.80's
+  `dxgi` answers `E_NOINTERFACE` to the adapter interface vkd3d asks for. Today's workaround, measured: choosing the
+  Wine (wined3d) or DXVK backend lets Wine's vkd3d create the device at 11_0.
+- **vkd3d-proton v3.0.1 on MoltenVK:** stops at the requirements. MoltenVK 1.4.0 has no `VK_EXT_transform_feedback`,
+  no `robustBufferAccess2` or `nullDescriptor` (`VK_EXT_robustness2`), and does not support single-texel alignment
+  for texel buffers (it reports 16 bytes). Only MoltenVK's features were probed; vkd3d-proton was not built.
+- **DXMT's own D3D12** (official commit `50102f9`, LGPL-2.1, built with `-Denable_d3d12`): the smoke program works in
+  64-bit (device, clear and read back, 30 presents), and it also fixes the Automatic blocking. But it is early:
+  feature level capped at 11_1, shader model 5_1, DXIL shaders (SM 6) refused with `E_NOTIMPL`, and so are geometry,
+  hull, domain and stream-output shaders. 32-bit aborts. The Direct3D 11 smoke is identical to revision 5's.
+
+Where each path ends: Wine's vkd3d creates a device at 11_0 without geometry shaders, stream output, depth clip or
+cull distance, and was not tried with a real game; vkd3d-proton needs Vulkan features MoltenVK does not have and the
+project does not patch MoltenVK; DXMT's D3D12 cannot run what current games ship (DXIL and tessellation are common).
+
+Skipped on purpose: playing a real Direct3D 12 game. DXMT's D3D12 refuses DXIL and tessellation, which modern games
+often need, so a run on it would have failed on the first shader and measured nothing new; Wine's vkd3d at 11_0 was
+not tried either.
+
+Follow-up, recorded as a gap and not as a decision to ship (see [Gaps](gaps.md)): revision 5's Automatic blocks even
+Wine's vkd3d, so without D3DMetal (and in 32-bit processes) a Direct3D 12 program cannot create a device, unless the
+Wine or DXVK backend is chosen. Two options to evaluate for a revision 6: move to the newer DXMT (LGPL; fixes it and adds basic D3D12 at 11_1 with DXBC shaders, but replaces the
+whole Direct3D 11 path), or a narrow fix (a small patch so DXMT's `dxgi` gives vkd3d its adapter, or `winhubcompat`
+not putting DXMT's `dxgi` first for Direct3D 12 programs).
+
+The spike's three tools are kept in the repository, in `tests/` and `scripts/`: `tests/d3d12-smoke.c`,
+`tests/vulkan-features.c` and `scripts/build-dxmt-d3d12-spike.sh`. They are not part of the smoke test and the CI does
+not build them. No binary was published and the installed engine was not touched.
+
 ## 2026-10-15: Game videos through GStreamer with VideoToolbox
 
 Revision 5 plays game videos: Wine's Media Foundation hands them to `winegstreamer`, which needs GStreamer, and the
