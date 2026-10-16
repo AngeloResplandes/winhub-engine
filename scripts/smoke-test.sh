@@ -100,13 +100,16 @@ grep -q '^OK' "$log" || status=1
 echo "== video (mf, h264/aac)"
 swift "$ROOT/scripts/make-test-video.swift" "$prefix/drive_c/winhub-test/smoke.mp4"
 log="$WORK/smoke-video.log"
-DEBUG="-all,trace+winhubcompat" GST_DEBUG="WINE:4" \
+# GST_ELEMENT_FACTORY:4 logs 'creating element "<factory>"' for every element decodebin makes (WINE:4 only
+# gives long names); VideoToolbox's decoder is vtdec_hw when hardware decoding is available, else vtdec.
+DEBUG="-all,trace+winhubcompat" GST_DEBUG="WINE:4,GST_ELEMENT_FACTORY:4" \
     wine "$WORK/mf-smoke64.exe" 'C:\winhub-test\smoke.mp4' > "$log" 2>&1 || true
-grep -E '^(OK|FAIL)|gstreamer plug-ins in|vtdec|atdec' "$log" | head -20 || true
+grep -E '^(OK|FAIL)|gstreamer plug-ins in|creating element "(vtdec|vtdec_hw|atdec)"' "$log" | head -20 || true
 grep -q 'gstreamer plug-ins in' "$log" || { echo "winhubcompat did not point at the runtime's GStreamer" >&2; status=1; }
 grep -q '^OK h264' "$log" || { echo "H.264 was not decoded" >&2; status=1; }
 grep -q '^OK aac' "$log" || { echo "AAC was not decoded" >&2; status=1; }
-grep -qE 'vtdec' "$log" || { echo "H.264 did not go through VideoToolbox (vtdec)" >&2; status=1; }
+grep -qE 'creating element "vtdec(_hw)?"' "$log" || { echo "H.264 did not go through VideoToolbox (vtdec)" >&2; status=1; }
+grep -q 'creating element "atdec"' "$log" || { echo "AAC did not go through AudioToolbox (atdec)" >&2; status=1; }
 
 for nvext in on off; do
     echo "== nvidia extensions $nvext"

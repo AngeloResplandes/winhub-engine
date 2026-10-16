@@ -37,7 +37,7 @@ static IMFSourceReader *open_reader(const WCHAR *path, DWORD stream, const GUID 
 
 static int check_video(const WCHAR *path)
 {
-    DWORD stream = MF_SOURCE_READER_FIRST_VIDEO_STREAM, flags, frames = 0, luma = 0;
+    DWORD stream = MF_SOURCE_READER_FIRST_VIDEO_STREAM, flags, frames = 0, luma = 0, reads, ended = 0;
     IMFSourceReader *reader = open_reader(path, stream, &MFMediaType_Video, &MFVideoFormat_NV12);
     IMFMediaType *type;
     UINT64 size = 0;
@@ -49,7 +49,8 @@ static int check_video(const WCHAR *path)
         IMFMediaType_GetUINT64(type, &MF_MT_FRAME_SIZE, &size);
         IMFMediaType_Release(type);
     }
-    for (;;)
+    /* Bounded, so a broken pipeline that never reaches the end of the stream cannot hang the test. */
+    for (reads = 0; reads < 1000; reads++)
     {
         IMFSample *sample = NULL;
         HRESULT hr = IMFSourceReader_ReadSample(reader, stream, 0, NULL, &flags, &time, &sample);
@@ -74,13 +75,22 @@ static int check_video(const WCHAR *path)
             }
             IMFSample_Release(sample);
         }
-        if (flags & MF_SOURCE_READERF_ENDOFSTREAM) break;
+        if (flags & MF_SOURCE_READERF_ERROR)
+        {
+            printf("FAIL ReadSample (video) flags=%#lx\n", flags);
+            break;
+        }
+        if (flags & MF_SOURCE_READERF_ENDOFSTREAM)
+        {
+            ended = 1;
+            break;
+        }
     }
     IMFSourceReader_Release(reader);
     /* A light-gray picture (RGB 200) is luma ~188 in video range; allow for the encoder. */
-    if ((UINT32)(size >> 32) != 128 || (UINT32)size != 96 || frames < 10 || luma < 170 || luma > 205)
+    if (!ended || (UINT32)(size >> 32) != 128 || (UINT32)size != 96 || frames < 10 || luma < 170 || luma > 205)
     {
-        printf("FAIL h264 %ux%u frames=%lu luma=%lu\n", (UINT32)(size >> 32), (UINT32)size, frames, luma);
+        printf("FAIL h264 %ux%u frames=%lu luma=%lu ended=%lu\n", (UINT32)(size >> 32), (UINT32)size, frames, luma, ended);
         return 0;
     }
     printf("OK h264 %ux%u frames=%lu luma=%lu\n", (UINT32)(size >> 32), (UINT32)size, frames, luma);
