@@ -43,7 +43,11 @@ static HRESULT run_and_wait(void)
     HRESULT hr;
     ID3D12GraphicsCommandList_Close(list);
     ID3D12CommandQueue_ExecuteCommandLists(queue, 1, (ID3D12CommandList **)&list);
-    if (FAILED(hr = ID3D12CommandQueue_Signal(queue, fence, ++fence_value))) return hr;
+    if (FAILED(hr = ID3D12CommandQueue_Signal(queue, fence, ++fence_value)))
+    {
+        CloseHandle(event);
+        return hr;
+    }
     if (ID3D12Fence_GetCompletedValue(fence) < fence_value)
     {
         ID3D12Fence_SetEventOnCompletion(fence, fence_value, event);
@@ -70,6 +74,7 @@ static int clear_offscreen(void)
     ID3D12Resource *texture, *readback;
     BYTE *data;
     HRESULT hr;
+    int ok;
 
     if (FAILED(hr = ID3D12Device_CreateCommittedResource(device, &heap, D3D12_HEAP_FLAG_NONE, &desc,
             D3D12_RESOURCE_STATE_RENDER_TARGET, NULL, &IID_ID3D12Resource, (void **)&texture)))
@@ -96,10 +101,10 @@ static int clear_offscreen(void)
     if (FAILED(hr = run_and_wait())) return fail("clear: wait", hr);
     if (FAILED(hr = ID3D12Resource_Map(readback, 0, NULL, (void **)&data))) return fail("Map(readback)", hr);
     data += (H / 2) * W * 4 + (W / 2) * 4;
-    printf("%s cleared %u %u %u %u\n", abs(data[0] - 191) <= 2 && abs(data[1] - 128) <= 2 && abs(data[2] - 64) <= 2
-           && data[3] == 255 ? "OK" : "FAIL", data[0], data[1], data[2], data[3]);
+    ok = abs(data[0] - 191) <= 2 && abs(data[1] - 128) <= 2 && abs(data[2] - 64) <= 2 && data[3] == 255;
+    printf("%s cleared %u %u %u %u\n", ok ? "OK" : "FAIL", data[0], data[1], data[2], data[3]);
     ID3D12Resource_Unmap(readback, 0, NULL);
-    return 0;
+    return ok ? 0 : 1;
 }
 
 static int present(int frames)
@@ -122,12 +127,15 @@ static int present(int frames)
     RegisterClassW(&wc);
     window = CreateWindowW(L"d3d12smoke", L"d3d12smoke", WS_OVERLAPPEDWINDOW | WS_VISIBLE, 0, 0, W, H,
                            NULL, NULL, NULL, NULL);
+    if (!window) return fail("CreateWindowW", HRESULT_FROM_WIN32(GetLastError()));
     if (FAILED(hr = CreateDXGIFactory2(0, &IID_IDXGIFactory4, (void **)&factory))) return fail("CreateDXGIFactory2", hr);
     if (FAILED(hr = IDXGIFactory4_CreateSwapChainForHwnd(factory, (IUnknown *)queue, window, &sc_desc, NULL, NULL,
             &swapchain1)))
         return fail("CreateSwapChainForHwnd", hr);
-    IDXGISwapChain1_QueryInterface(swapchain1, &IID_IDXGISwapChain3, (void **)&swapchain);
-    ID3D12Device_CreateDescriptorHeap(device, &heap_desc, &IID_ID3D12DescriptorHeap, (void **)&rtv_heap);
+    if (FAILED(hr = IDXGISwapChain1_QueryInterface(swapchain1, &IID_IDXGISwapChain3, (void **)&swapchain)))
+        return fail("IDXGISwapChain1_QueryInterface", hr);
+    if (FAILED(hr = ID3D12Device_CreateDescriptorHeap(device, &heap_desc, &IID_ID3D12DescriptorHeap, (void **)&rtv_heap)))
+        return fail("ID3D12Device_CreateDescriptorHeap", hr);
     rtv_start = ID3D12DescriptorHeap_GetCPUDescriptorHandleForHeapStart(rtv_heap);
     rtv_size = ID3D12Device_GetDescriptorHandleIncrementSize(device, D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
     for (i = 0; i < frames; i++)
@@ -139,7 +147,8 @@ static int present(int frames)
         MSG msg;
 
         while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) DispatchMessageW(&msg);
-        IDXGISwapChain3_GetBuffer(swapchain, index, &IID_ID3D12Resource, (void **)&back);
+        if (FAILED(hr = IDXGISwapChain3_GetBuffer(swapchain, index, &IID_ID3D12Resource, (void **)&back)))
+            return fail("IDXGISwapChain3_GetBuffer", hr);
         ID3D12Device_CreateRenderTargetView(device, back, NULL, rtv);
         barrier(back, D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET);
         ID3D12GraphicsCommandList_ClearRenderTargetView(list, rtv, color, 0, NULL);
@@ -176,11 +185,14 @@ int main(int argc, char **argv)
         printf("feature level: %#x\n", levels.MaxSupportedFeatureLevel);
     if (FAILED(hr = ID3D12Device_CreateCommandQueue(device, &queue_desc, &IID_ID3D12CommandQueue, (void **)&queue)))
         return fail("CreateCommandQueue", hr);
-    ID3D12Device_CreateCommandAllocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT, &IID_ID3D12CommandAllocator,
-                                        (void **)&allocator);
-    ID3D12Device_CreateCommandList(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator, NULL,
-                                   &IID_ID3D12GraphicsCommandList, (void **)&list);
-    ID3D12Device_CreateFence(device, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void **)&fence);
+    if (FAILED(hr = ID3D12Device_CreateCommandAllocator(device, D3D12_COMMAND_LIST_TYPE_DIRECT,
+            &IID_ID3D12CommandAllocator, (void **)&allocator)))
+        return fail("ID3D12Device_CreateCommandAllocator", hr);
+    if (FAILED(hr = ID3D12Device_CreateCommandList(device, 0, D3D12_COMMAND_LIST_TYPE_DIRECT, allocator, NULL,
+            &IID_ID3D12GraphicsCommandList, (void **)&list)))
+        return fail("ID3D12Device_CreateCommandList", hr);
+    if (FAILED(hr = ID3D12Device_CreateFence(device, 0, D3D12_FENCE_FLAG_NONE, &IID_ID3D12Fence, (void **)&fence)))
+        return fail("ID3D12Device_CreateFence", hr);
     if (clear_offscreen()) return 1;
     return present(frames);
 }
