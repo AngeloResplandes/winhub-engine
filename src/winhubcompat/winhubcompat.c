@@ -585,7 +585,7 @@ static void set_gstreamer_paths( void )
     struct stat st;
 
     if (!compat_gst_paths( root_dir, getenv( "HOME" ), &plugins, &registry )) return;
-    if (!stat( plugins, &st ) && S_ISDIR( st.st_mode ))
+    if (plugins && !stat( plugins, &st ) && S_ISDIR( st.st_mode ))
     {
         setenv( "GST_PLUGIN_SYSTEM_PATH_1_0", plugins, 0 );
         if (registry) setenv( "GST_REGISTRY_1_0", registry, 0 );
