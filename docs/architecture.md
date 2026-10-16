@@ -68,10 +68,10 @@ official build has no GStreamer libraries or plug-ins, so the engine builds `win
 
 - **H.264 and AAC are decoded by macOS**: `vtdec` (VideoToolbox, hardware when available) and `atdec`
   (AudioToolbox), from gst-plugins-bad's `applemedia`. There is no FFmpeg, x264 or GPL plug-in.
-- `lib/gstreamer-1.0/` holds 14 plug-ins: the MP4 demuxer, parsers, converters and `decodebin`'s playback bin,
-  besides `applemedia`. GLib, GStreamer and their libraries sit in `lib/`, next to the base build's; they find
-  each other (and the base build's `libintl`) through `@rpath`. The libraries and the plug-ins they need are
-  chosen by `package.sh` from the dependencies of `winegstreamer.so`, not copied wholesale.
+- `lib/gstreamer-1.0/` holds 14 plug-ins, a fixed list in `package.sh`: the MP4 demuxer, parsers, converters and
+  `decodebin`'s playback bin, besides `applemedia`. GLib, GStreamer and their libraries sit in `lib/`, next to
+  the base build's; they find each other (and the base build's `libintl`) through `@rpath`. The libraries are
+  the `@rpath` dependency closure of `winegstreamer.so` plus those plug-ins, not copied wholesale.
 - Only MP4 with H.264 and AAC is covered. Other formats are in [Gaps](gaps.md).
 
 ## winhubcompat

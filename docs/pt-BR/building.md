@@ -102,7 +102,7 @@ GStreamer, então o motor o compila e o leva junto. H.264 e AAC são decodificad
 | O applemedia não compila | as fontes de GL dele precisam do gstreamer-gl, e `auto_features=disabled` desliga o `gl` do bad | `-Dgl=enabled` no bad (e no base, com as opções CGL/Cocoa) |
 | `External plugin loader failed … GST_PLUGIN_SCANNER` | nenhum `gst-plugin-scanner` é compilado (`-Dtools=disabled`) | não precisa: o winegstreamer inicia o GStreamer com `--gst-disable-registry-fork`, então ele varre no próprio processo e não imprime nada |
 | O `winegstreamer.so` leva um rpath para `work/gstreamer-install` | o `gstreamer-1.0.pc` tem `-Wl,-rpath,${libdir}` | o `build-wine.sh` o tira de `GSTREAMER_LIBS` e confere o resultado |
-| O `winegstreamer.so` pede a `libintl.dylib` sem versão | o `-lintl` do `glib-2.0.pc` acha a cópia do pacote base em `work/deps/lib` | `-L$WORK/gst-deps/lib` primeiro em `GSTREAMER_LIBS`; o `build-wine.sh` recusa qualquer dependência que não seja `@rpath/`, `/usr/lib/` ou `/System/Library/` |
+| O `winegstreamer.so` pede a `libintl.dylib` sem versão | o `-lintl` do `glib-2.0.pc` acha a cópia do pacote base em `work/deps/lib` | `-L$WORK/gst-deps/lib` acrescentado ao `GSTREAMER_LIBS`; o `build-wine.sh` recusa qualquer dependência que não seja `@rpath/`, `/usr/lib/` ou `/System/Library/` |
 | O `configure` não consegue usar o GStreamer: `libffi` | o `gobject-2.0.pc` exige o `libffi.pc` | o `PKG_CONFIG_LIBDIR` também inclui `work/gst-deps/pkgconfig` |
 | O `strip` invalida as assinaturas das bibliotecas do GStreamer | o `build-gstreamer.sh` as assina ad hoc | `package.sh`: remover a assinatura, `strip -x`, assinar de novo |
 | O `vtdec` parece faltar no log do teste de fumaça | o `WINE:4` registra nomes longos ("Apple VideoToolbox decoder (hardware only)") | também `GST_ELEMENT_FACTORY:4`, que registra `creating element "vtdec_hw"` |
@@ -113,5 +113,5 @@ O `.github/workflows/build.yml` roda em pushes na `main`, em pull requests e em 
 documentação são puladas): testes unitários, conferência da assinatura do banco de regras, LLVM (em cache), GLib
 e GStreamer (em cache), Wine, winhubcompat, DXMT, DXVK, cabextract, empacotamento e teste de fumaça. O cache do
 GStreamer guarda tudo o que os passos seguintes leem (`gstreamer-install`, `gst-src`, `gst-deps`, `gvdb`, os
-downloads do pcre2) e a chave dele é `CROSSOVER_VERSION`, `PCRE2_SHA256`, `GVDB_COMMIT` e um hash do
+downloads do pcre2) e a chave dele é `CROSSOVER_VERSION`, `PCRE2_SHA256`, `PCRE2_WRAP_SHA256`, `WINE_BASE_SHA256`, `GVDB_COMMIT` e um hash do
 `build-gstreamer.sh`. Uma tag também publica a versão, veja [Publicação](releasing.md).

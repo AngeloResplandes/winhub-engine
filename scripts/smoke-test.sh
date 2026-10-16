@@ -107,7 +107,7 @@ DEBUG="-all,trace+winhubcompat" GST_DEBUG="WINE:4,GST_ELEMENT_FACTORY:4" \
 grep -E '^(OK|FAIL)|gstreamer plug-ins in|creating element "(vtdec|vtdec_hw|atdec)"' "$log" | head -20 || true
 grep -q 'gstreamer plug-ins in' "$log" || { echo "winhubcompat did not point at the runtime's GStreamer" >&2; status=1; }
 grep -q '^OK h264' "$log" || { echo "H.264 was not decoded" >&2; status=1; }
-grep -q '^OK aac' "$log" || { echo "AAC was not decoded" >&2; status=1; }
+grep -q '^OK aac rate=44100 channels=2' "$log" || { echo "AAC was not decoded" >&2; status=1; }
 grep -qE 'creating element "vtdec(_hw)?"' "$log" || { echo "H.264 did not go through VideoToolbox (vtdec)" >&2; status=1; }
 grep -q 'creating element "atdec"' "$log" || { echo "AAC did not go through AudioToolbox (atdec)" >&2; status=1; }
 

@@ -180,6 +180,7 @@ for plugin in coreelements app typefindfunctions playback audioconvert audioresa
     otool -l "$p/libgst$plugin.dylib" | grep -q 'path @loader_path/.. ' || { echo "$plugin has no @loader_path/.. rpath" >&2; exit 1; }
 done
 nm -U "$p/libgstapplemedia.dylib" | grep -q vtdec || { echo "applemedia has no vtdec" >&2; exit 1; }
+nm -U "$p/libgstapplemedia.dylib" | grep -q atdec || { echo "applemedia has no atdec" >&2; exit 1; }
 if otool -L "$prefix"/lib/*.dylib "$p"/*.dylib | grep '^[[:space:]]' | grep -E -q "$WORK|/opt/homebrew|/usr/local"; then
     echo "a GStreamer library links against a build or Homebrew path" >&2
     exit 1
@@ -188,4 +189,9 @@ if otool -l "$prefix"/lib/*.dylib "$p"/*.dylib | grep -E -q "^[[:space:]]*path (
     echo "a GStreamer library has a build or Homebrew rpath" >&2
     exit 1
 fi
+built="$(PKG_CONFIG_LIBDIR="$prefix/lib/pkgconfig:$deps/pkgconfig" pkgconf --modversion glib-2.0 gstreamer-1.0 | tr '\n' ' ')"
+[ "$built" = "$GLIB_VERSION $GSTREAMER_VERSION " ] || {
+    echo "built versions ($built) differ from versions.env (GLib $GLIB_VERSION, GStreamer $GSTREAMER_VERSION)" >&2
+    exit 1
+}
 echo "GLib $GLIB_VERSION and GStreamer $GSTREAMER_VERSION installed in $prefix"

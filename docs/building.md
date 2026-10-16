@@ -101,7 +101,7 @@ gst-plugins-bad's `applemedia`); there is no FFmpeg, x264 or GPL plug-in (`-Dgpl
 | applemedia does not compile | its GL sources need gstreamer-gl, and `auto_features=disabled` turns bad's `gl` off | `-Dgl=enabled` in bad (and base with the CGL/Cocoa options) |
 | `External plugin loader failed … GST_PLUGIN_SCANNER` | no `gst-plugin-scanner` is built (`-Dtools=disabled`) | none needed: winegstreamer starts GStreamer with `--gst-disable-registry-fork`, so it scans in-process and prints nothing |
 | `winegstreamer.so` carries an rpath to `work/gstreamer-install` | `gstreamer-1.0.pc` has `-Wl,-rpath,${libdir}` | `build-wine.sh` strips it from `GSTREAMER_LIBS` and checks the result |
-| `winegstreamer.so` asks for a bare `libintl.dylib` | `-lintl` from `glib-2.0.pc` finds the base build's copy in `work/deps/lib` | `-L$WORK/gst-deps/lib` first in `GSTREAMER_LIBS`; `build-wine.sh` rejects any dependency that is not `@rpath/`, `/usr/lib/` or `/System/Library/` |
+| `winegstreamer.so` asks for a bare `libintl.dylib` | `-lintl` from `glib-2.0.pc` finds the base build's copy in `work/deps/lib` | `-L$WORK/gst-deps/lib` added to `GSTREAMER_LIBS`; `build-wine.sh` rejects any dependency that is not `@rpath/`, `/usr/lib/` or `/System/Library/` |
 | `configure` cannot use GStreamer: `libffi` | `gobject-2.0.pc` requires `libffi.pc` | `PKG_CONFIG_LIBDIR` also holds `work/gst-deps/pkgconfig` |
 | `strip` invalidates the signatures of the GStreamer libraries | `build-gstreamer.sh` signs them ad hoc | `package.sh`: remove the signature, `strip -x`, sign again |
 | `vtdec` seems missing from the smoke log | `WINE:4` logs long names ("Apple VideoToolbox decoder (hardware only)") | `GST_ELEMENT_FACTORY:4` as well, which logs `creating element "vtdec_hw"` |
@@ -112,5 +112,5 @@ gst-plugins-bad's `applemedia`); there is no FFmpeg, x264 or GPL plug-in (`-Dgpl
 documentation only are skipped): unit tests, signature check of the rule database, LLVM (cached), GLib and
 GStreamer (cached), Wine, winhubcompat, DXMT, DXVK, cabextract, package and smoke test. The GStreamer cache holds
 everything the later steps read (`gstreamer-install`, `gst-src`, `gst-deps`, `gvdb`, the pcre2 downloads) and its
-key is `CROSSOVER_VERSION`, `PCRE2_SHA256`, `GVDB_COMMIT` and a hash of `build-gstreamer.sh`. A tag also publishes
+key is `CROSSOVER_VERSION`, `PCRE2_SHA256`, `PCRE2_WRAP_SHA256`, `WINE_BASE_SHA256`, `GVDB_COMMIT` and a hash of `build-gstreamer.sh`. A tag also publishes
 the release, see [Releasing](releasing.md).

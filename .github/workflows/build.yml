@@ -50,7 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Versões
-        run: grep -E '^(LLVM_COMMIT|ENGINE_REVISION|WINE_VERSION|CROSSOVER_VERSION|PCRE2_SHA256|GVDB_COMMIT)=' versions.env >> "$GITHUB_ENV"
+        run: grep -E '^(LLVM_COMMIT|ENGINE_REVISION|WINE_VERSION|CROSSOVER_VERSION|PCRE2_SHA256|PCRE2_WRAP_SHA256|WINE_BASE_SHA256|GVDB_COMMIT)=' versions.env >> "$GITHUB_ENV"
       - name: Rosetta 2
         run: /usr/sbin/softwareupdate --install-rosetta --agree-to-license || true
       - name: Ferramentas
@@ -77,7 +77,7 @@ jobs:
             work/gst-deps
             work/gvdb
             work/downloads/pcre2*
-          key: gstreamer-x86_64-${{ env.CROSSOVER_VERSION }}-${{ env.PCRE2_SHA256 }}-${{ env.GVDB_COMMIT }}-${{ hashFiles('scripts/build-gstreamer.sh') }}
+          key: gstreamer-x86_64-${{ env.CROSSOVER_VERSION }}-${{ env.PCRE2_SHA256 }}-${{ env.PCRE2_WRAP_SHA256 }}-${{ env.WINE_BASE_SHA256 }}-${{ env.GVDB_COMMIT }}-${{ hashFiles('scripts/build-gstreamer.sh') }}
       - name: GLib e GStreamer (vídeos dos jogos)
         if: steps.gst-cache.outputs.cache-hit != 'true'
         run: ./scripts/build-gstreamer.sh
@@ -91,7 +91,7 @@ jobs:
             work/gst-deps
             work/gvdb
             work/downloads/pcre2*
-          key: gstreamer-x86_64-${{ env.CROSSOVER_VERSION }}-${{ env.PCRE2_SHA256 }}-${{ env.GVDB_COMMIT }}-${{ hashFiles('scripts/build-gstreamer.sh') }}
+          key: gstreamer-x86_64-${{ env.CROSSOVER_VERSION }}-${{ env.PCRE2_SHA256 }}-${{ env.PCRE2_WRAP_SHA256 }}-${{ env.WINE_BASE_SHA256 }}-${{ env.GVDB_COMMIT }}-${{ hashFiles('scripts/build-gstreamer.sh') }}
       - name: Wine (fontes LGPL do CrossOver + patches)
         run: ./scripts/build-wine.sh
       - name: winhubcompat

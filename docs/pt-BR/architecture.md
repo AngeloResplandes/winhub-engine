@@ -69,10 +69,11 @@ GStreamer junto ([`build-gstreamer.sh`](building.md#o-que-o-build-gstreamersh-fa
 
 - **H.264 e AAC são decodificados pelo macOS**: `vtdec` (VideoToolbox, em hardware quando houver) e `atdec`
   (AudioToolbox), do `applemedia` do gst-plugins-bad. Não há FFmpeg, x264 nem plug-in GPL.
-- `lib/gstreamer-1.0/` tem 14 plug-ins: o demultiplexador de MP4, analisadores, conversores e o bin de reprodução do
-  `decodebin`, além do `applemedia`. O GLib, o GStreamer e as bibliotecas deles ficam em `lib/`, ao lado das do
-  pacote base; eles se acham (e acham a `libintl` do pacote base) por `@rpath`. O `package.sh` escolhe as
-  bibliotecas e os plug-ins pelas dependências do `winegstreamer.so`, em vez de copiar tudo.
+- `lib/gstreamer-1.0/` tem 14 plug-ins, uma lista fixa no `package.sh`: o demultiplexador de MP4, analisadores,
+  conversores e o bin de reprodução do `decodebin`, além do `applemedia`. O GLib, o GStreamer e as bibliotecas
+  deles ficam em `lib/`, ao lado das do pacote base; eles se acham (e acham a `libintl` do pacote base) por
+  `@rpath`. As bibliotecas são o fecho das dependências `@rpath` do `winegstreamer.so` e desses plug-ins, em
+  vez de copiar tudo.
 - Só MP4 com H.264 e AAC é coberto. Os outros formatos estão em [Lacunas](gaps.md).
 
 ## winhubcompat
