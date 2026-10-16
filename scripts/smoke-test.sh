@@ -5,7 +5,8 @@
 # (64-bit; a 32-bit program asking for DXVK falls back to DXMT), with no DLL copied into the bottle.
 # A local replace_exe_path rule must make a 32-bit program start the 64-bit test instead, a local
 # steam_game_id rule must match a program whose SteamGameId is only in its Windows environment, and DXMT's
-# nvapi64/nvngx must answer only with DXMT_ENABLE_NVEXT=1.
+# nvapi64/nvngx must answer only with DXMT_ENABLE_NVEXT=1. A Media Foundation program must decode a
+# freshly made MP4 (H.264 through VideoToolbox, AAC through AudioToolbox) with the GStreamer the engine ships.
 # SMOKE_BACKENDS (default "dxmt dxvk") picks the backends to test.
 . "$(dirname "$0")/common.sh"
 
@@ -30,7 +31,7 @@ wine() {
     env -i HOME="$HOME" USER="${USER:-runner}" TMPDIR="${TMPDIR:-/tmp}" LANG=en_US.UTF-8 \
         PATH="$wine_dir/bin:/usr/bin:/bin" WINEPREFIX="$prefix" ROSETTA_ADVERTISE_AVX=1 \
         WINEDEBUG="${DEBUG:--all}" WINHUB_GRAPHICS_BACKEND="${BACKEND:-auto}" WINHUB_COMPAT_RULES="${RULES:-}" \
-        DXMT_ENABLE_NVEXT="${NVEXT:-}" \
+        DXMT_ENABLE_NVEXT="${NVEXT:-}" GST_DEBUG="${GST_DEBUG:-}" \
         WINEDLLOVERRIDES="mscoree,mshtml=" "$wine_dir/bin/wine" "$@"
 }
 wine --version
@@ -39,6 +40,7 @@ wine wineboot --init
 x86_64-w64-mingw32-gcc -O2 -o "$WORK/d3d11-smoke64.exe" "$ROOT/tests/d3d11-smoke.c" -ld3d11 -ldxgi -luuid
 i686-w64-mingw32-gcc -O2 -o "$WORK/d3d11-smoke32.exe" "$ROOT/tests/d3d11-smoke.c" -ld3d11 -ldxgi -luuid
 x86_64-w64-mingw32-gcc -O2 -o "$WORK/nvapi-smoke64.exe" "$ROOT/tests/nvapi-smoke.c"
+x86_64-w64-mingw32-gcc -O2 -o "$WORK/mf-smoke64.exe" "$ROOT/tests/mf-smoke.c" -lmfplat -lmfreadwrite -lmfuuid -lole32 -luuid
 
 # DXVK writes its logs and shader cache to the current folder.
 cd "$WORK"
@@ -92,6 +94,19 @@ grep -q 'SteamGameId "4242"' "$log" || { echo "SteamGameId was not read from the
 grep -q 'smoke steam game: graphics backend dxvk' "$log" || { echo "the steam_game_id rule was not applied" >&2; status=1; }
 grep -q 'using dxvk as the graphics backend' "$log" || { echo "winhubcompat did not pick dxvk" >&2; status=1; }
 grep -q '^OK' "$log" || status=1
+
+# Game videos: Media Foundation hands MP4 to winegstreamer, which must find the runtime's GStreamer
+# (winhubcompat sets its plug-in path) and decode H.264 with vtdec and AAC with atdec.
+echo "== video (mf, h264/aac)"
+swift "$ROOT/scripts/make-test-video.swift" "$prefix/drive_c/winhub-test/smoke.mp4"
+log="$WORK/smoke-video.log"
+DEBUG="-all,trace+winhubcompat" GST_DEBUG="WINE:4" \
+    wine "$WORK/mf-smoke64.exe" 'C:\winhub-test\smoke.mp4' > "$log" 2>&1 || true
+grep -E '^(OK|FAIL)|gstreamer plug-ins in|vtdec|atdec' "$log" | head -20 || true
+grep -q 'gstreamer plug-ins in' "$log" || { echo "winhubcompat did not point at the runtime's GStreamer" >&2; status=1; }
+grep -q '^OK h264' "$log" || { echo "H.264 was not decoded" >&2; status=1; }
+grep -q '^OK aac' "$log" || { echo "AAC was not decoded" >&2; status=1; }
+grep -qE 'vtdec' "$log" || { echo "H.264 did not go through VideoToolbox (vtdec)" >&2; status=1; }
 
 for nvext in on off; do
     echo "== nvidia extensions $nvext"
