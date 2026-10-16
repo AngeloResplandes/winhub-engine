@@ -2,7 +2,7 @@
 
 # Paridade com o motor do CrossOver
 
-> **Última revisão:** 2026-10-15 · **Motor:** revisão 3 (`wine-11.0-r3`) · **Alvo:** o motor que
+> **Última revisão:** 2026-10-15 · **Motor:** revisão 4 (`wine-11.0-r4`) · **Alvo:** o motor que
 > vem no CrossOver 26.3.0 para macOS
 
 O quanto o winhub-engine se aproxima do motor que o CrossOver traz, dimensão por dimensão. Números "medidos" vêm
@@ -21,11 +21,11 @@ de testes deste repositório; os "estimados" são avaliação, com o motivo ao l
 
 ## Por dimensão
 
-| Dimensão | Peso | CrossOver 26.3 | winhub-engine r3 | % | Tipo |
+| Dimensão | Peso | CrossOver 26.3 | winhub-engine r4 | % | Tipo |
 |---|---:|---|---|---:|---|
 | Núcleo do Wine, WoW64, Rosetta | 25% | Wine 11.0 + patches da CodeWeavers | a mesma árvore, mais três patches pequenos | 100% | mesmas fontes |
 | Sincronização (msync) | 10% | sim | sim, o mesmo código | 100% | mesmas fontes |
-| Escolha do backend por processo | 10% | módulo fechado, regras cifradas | `winhubcompat`, regras abertas, mesmas decisões e ordem, inclusive a troca do caminho do executável | 100% | estimado |
+| Escolha do backend por processo | 10% | módulo fechado, regras cifradas | `winhubcompat`, regras abertas, mesmas decisões e ordem, inclusive a troca do caminho do executável e o casamento pelo ID da Steam | 100% | estimado |
 | Direct3D 10/11 | 20% | DXMT v0.72+, DXVK 1.10.3 (com o MoltenVK deles), D3DMetal | DXMT v0.80 64/32 bits, DXVK 1.10.3 só 64 bits, D3DMetal se o usuário tiver | 85% | casos medidos, peso estimado |
 | Direct3D 12 | 15% | D3DMetal 3.0 incluído | D3DMetal só do Game Porting Toolkit do usuário; vkd3d do Wine nos outros casos | 30% | estimado |
 | Regras de compatibilidade (conteúdo) | 10% | banco curado por jogo, atualizado online | o formato e o canal de atualização assinado existem; 2 regras | 5% | medido (2 regras) |
@@ -50,3 +50,4 @@ de testes deste repositório; os "estimados" são avaliação, com o motivo ao l
 |---|---|
 | 2026-10-12 | Primeira avaliação, revisão 2 do motor. |
 | 2026-10-13 | Revisão 3: escolha do backend de 90% para 100% (`replace_exe_path`), DLSS de 50% para 80%; total ~71%. |
+| 2026-10-15 | Revisão 4: regras `steam_game_id` casam com jogos abertos pela Steam; 2 regras; total ~71%. |
