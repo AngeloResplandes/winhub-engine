@@ -65,6 +65,8 @@ ar = 'ar'
 strip = 'strip'
 pkg-config = '$(command -v pkgconf)'
 python = '/usr/bin/python3'
+# GStreamer's gnome.mkenums_simple; meson would otherwise look for a build-machine GLib.
+glib-mkenums = ['/usr/bin/python3', '$prefix/bin/glib-mkenums']
 
 [constants]
 args = ['-I$(brew --prefix gettext)/include', '-Werror=unguarded-availability-new']
@@ -104,9 +106,16 @@ rpath_names() {
         for dep in $(otool -L "$f" | sed -n "s|^[[:space:]]*\($prefix/lib/[^ ]*\) (.*|\1|p"); do
             set -- "$@" -change "$dep" "@rpath/${dep##*/}"
         done
+        # meson keeps an absolute rpath to $prefix/lib for libraries found there through pkg-config.
+        for rpath in $(otool -l "$f" | sed -n "s|^[[:space:]]*path \($WORK/[^ ]*\) (offset .*|\1|p"); do
+            set -- "$@" -delete_rpath "$rpath"
+        done
         case "$f" in
             "$prefix"/bin/*)
                 otool -l "$f" | grep -q 'path @loader_path/../lib ' || set -- "$@" -add_rpath @loader_path/../lib ;;
+            # Plug-ins (lib/gstreamer-1.0/) find the libraries one folder up.
+            "$prefix"/lib/*/*)
+                otool -l "$f" | grep -q 'path @loader_path/.. ' || set -- "$@" -add_rpath @loader_path/.. ;;
         esac
         [ $# -gt 0 ] || continue
         install_name_tool "$@" "$f" 2>/dev/null
@@ -140,4 +149,43 @@ for lib in libglib-2.0.0 libgobject-2.0.0 libgmodule-2.0.0 libgio-2.0.0; do
     fi
 done
 test -f "$prefix/lib/pkgconfig/glib-2.0.pc" || { echo "missing glib-2.0.pc" >&2; exit 1; }
-echo "GLib $GLIB_VERSION installed in $prefix"
+
+# GStreamer: core, base, good and bad, only what winegstreamer's decodebin needs for MP4/H.264/AAC.
+# gst_parse=false: the parser needs bison >= 2.4 (macOS has 2.3) and winegstreamer never calls it.
+# gst-plugins-good has no introspection or tools option.
+g="$src/gstreamer/subprojects"
+common="-Dnls=disabled -Dtests=disabled -Dexamples=disabled -Ddoc=disabled -Dorc=disabled"
+meson_build "$g/gstreamer" gstreamer -Dnls=disabled -Dtests=disabled -Dexamples=disabled -Ddoc=disabled \
+    -Dintrospection=disabled -Dtools=disabled -Dbenchmarks=disabled -Dcheck=disabled -Dptp-helper=disabled \
+    -Dlibunwind=disabled -Dlibdw=disabled -Dbash-completion=disabled -Dregistry=true -Dcoretracers=disabled \
+    -Dgst_parse=false
+# shellcheck disable=SC2086
+meson_build "$g/gst-plugins-base" base $common -Dintrospection=disabled -Dtools=disabled \
+    -Dapp=enabled -Dtypefind=enabled -Dplayback=enabled -Daudioconvert=enabled -Daudioresample=enabled \
+    -Dvideoconvertscale=enabled -Dpbtypes=enabled \
+    -Dgl=enabled -Dgl_api=opengl -Dgl_platform=cgl -Dgl_winsys=cocoa
+# shellcheck disable=SC2086
+meson_build "$g/gst-plugins-good" good $common \
+    -Disomp4=enabled -Daudioparsers=enabled -Dwavparse=enabled -Ddeinterlace=enabled -Dvideofilter=enabled
+# applemedia needs the GL library from base (-Dgl=enabled).
+# shellcheck disable=SC2086
+meson_build "$g/gst-plugins-bad" bad $common -Dintrospection=disabled -Dtools=disabled -Dgpl=disabled \
+    -Dapplemedia=enabled -Dvideoparsers=enabled -Dgl=enabled
+
+p="$prefix/lib/gstreamer-1.0"
+for plugin in coreelements app typefindfunctions playback audioconvert audioresample videoconvertscale \
+              isomp4 audioparsers wavparse deinterlace videofilter videoparsersbad applemedia; do
+    test -f "$p/libgst$plugin.dylib" || { echo "missing plug-in $plugin" >&2; exit 1; }
+    lipo -archs "$p/libgst$plugin.dylib" | grep -qx x86_64 || { echo "$plugin is not x86_64" >&2; exit 1; }
+    otool -l "$p/libgst$plugin.dylib" | grep -q 'path @loader_path/.. ' || { echo "$plugin has no @loader_path/.. rpath" >&2; exit 1; }
+done
+nm -U "$p/libgstapplemedia.dylib" | grep -q vtdec || { echo "applemedia has no vtdec" >&2; exit 1; }
+if otool -L "$prefix"/lib/*.dylib "$p"/*.dylib | grep '^[[:space:]]' | grep -E -q "$WORK|/opt/homebrew|/usr/local"; then
+    echo "a GStreamer library links against a build or Homebrew path" >&2
+    exit 1
+fi
+if otool -l "$prefix"/lib/*.dylib "$p"/*.dylib | grep -E -q "^[[:space:]]*path ($WORK|/opt/homebrew|/usr/local)"; then
+    echo "a GStreamer library has a build or Homebrew rpath" >&2
+    exit 1
+fi
+echo "GLib $GLIB_VERSION and GStreamer $GSTREAMER_VERSION installed in $prefix"
