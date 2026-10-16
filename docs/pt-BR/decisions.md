@@ -4,6 +4,43 @@
 
 Registro datado das decisões que deram forma ao motor, das mais novas para as mais antigas.
 
+## 2026-10-16: O Direct3D 12 continua com o D3DMetal
+
+Um spike de um dia procurou um jeito de jogar Direct3D 12 sem o D3DMetal do próprio usuário (Game Porting Toolkit)
+e não achou. O Direct3D 12 jogável ainda precisa do D3DMetal, e o próximo passo do WinHub é o guia do Game Porting
+Toolkit no app. Medido na revisão 5, em Apple silicon com o MoltenVK 1.4.0:
+
+- **vkd3d do Wine** (o do próprio pacote): com o `dxgi` do Wine ele cria o dispositivo, mas só no feature level 11_0
+  (o MoltenVK não tem geometry shader, stream output, depth clip nem cull distance). Com o "Automático" (o `dxgi` do
+  DXMT na frente) ele não cria dispositivo nenhum: o `dxgi` do DXMT v0.80 responde `E_NOINTERFACE` à interface de
+  adaptador que o vkd3d pede.
+- **vkd3d-proton v3.0.1 sobre o MoltenVK:** para nos requisitos. O MoltenVK 1.4.0 não tem
+  `VK_EXT_transform_feedback`, nem `robustBufferAccess2` e `nullDescriptor` (`VK_EXT_robustness2`), e não
+  oferece o alinhamento de um só texel nos texel buffers (informa 16 bytes). Só os recursos do MoltenVK foram
+  sondados; o vkd3d-proton não foi compilado.
+- **O D3D12 do próprio DXMT** (commit oficial `50102f9`, LGPL-2.1, compilado com `-Denable_d3d12`): o programa de
+  fumaça funciona em 64 bits (dispositivo, limpar e ler de volta, 30 apresentações), e ele também resolve o bloqueio
+  do "Automático". Mas é inicial: feature level limitado a 11_1, shader model 5_1, shaders DXIL (SM 6) recusados com
+  `E_NOTIMPL`, e os de geometria, hull, domain e stream output também. Em 32 bits ele aborta. A fumaça de Direct3D 11
+  é idêntica à da revisão 5.
+
+Por que cada caminho para: o vkd3d do Wine chega só ao 11_0 nessa camada Vulkan; o vkd3d-proton exige recursos do
+Vulkan que o MoltenVK não tem e o projeto não altera o MoltenVK; o D3D12 do DXMT não roda o que os jogos atuais
+trazem (DXIL e tesselação são comuns).
+
+Deixado de lado de propósito: jogar um jogo Direct3D 12 de verdade. As fontes acima já mostram que os jogos modernos
+precisam de DXIL e muitas vezes de tesselação, então o teste falharia no primeiro shader e não mediria nada novo.
+
+Próximo passo, registrado como lacuna e não como decisão de publicar (veja [Lacunas](gaps.md)): o "Automático" da
+revisão 5 bloqueia até o vkd3d do Wine, então um programa Direct3D 12 não cria dispositivo sem o D3DMetal. Duas
+opções a avaliar para uma revisão 6: passar para o DXMT mais novo (LGPL; resolve o bloqueio e traz D3D12 básico no
+11_1 com shaders DXBC, mas troca todo o caminho de Direct3D 11), ou uma correção estreita (um patch pequeno para o
+`dxgi` do DXMT entregar o adaptador ao vkd3d, ou o `winhubcompat` não pôr o `dxgi` do DXMT na frente nos programas
+Direct3D 12).
+
+As ferramentas do spike ficam na branch `spike-d3d12`: `tests/d3d12-smoke.c`, `tests/vulkan-features.c` e
+`scripts/build-dxmt-d3d12-spike.sh`. Nenhum binário foi publicado e o motor instalado não foi tocado.
+
 ## 2026-10-15: Vídeos dos jogos pelo GStreamer com o VideoToolbox
 
 A revisão 5 toca os vídeos dos jogos: o Media Foundation do Wine os entrega ao `winegstreamer`, que precisa do

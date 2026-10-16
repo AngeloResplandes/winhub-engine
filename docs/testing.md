@@ -36,6 +36,10 @@ presents 30 frames:
 
 `SMOKE_BACKENDS="dxmt"` limits the backends. The CI runs the full test.
 
+The Direct3D 12 spike (2026-10-16, [decision](decisions.md#2026-10-16-direct3d-12-stays-with-d3dmetal)) left three
+tools on the `spike-d3d12` branch, outside this test: `tests/d3d12-smoke.c` (device, feature level, clear and present),
+`tests/vulkan-features.c` (lists the Vulkan features vkd3d-proton needs) and `scripts/build-dxmt-d3d12-spike.sh`.
+
 ### The video case
 
 `scripts/make-test-video.swift` writes the MP4 when the test runs (nothing is stored in Git): 15 light-gray frames at

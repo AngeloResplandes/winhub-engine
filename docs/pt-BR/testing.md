@@ -36,6 +36,11 @@ quadros:
 
 `SMOKE_BACKENDS="dxmt"` limita os backends. O CI roda o teste completo.
 
+O spike de Direct3D 12 (2026-10-16, [decisão](decisions.md#2026-10-16-o-direct3d-12-continua-com-o-d3dmetal)) deixou
+três ferramentas na branch `spike-d3d12`, fora deste teste: `tests/d3d12-smoke.c` (dispositivo, feature level,
+limpar e apresentar), `tests/vulkan-features.c` (lista os recursos do Vulkan de que o vkd3d-proton precisa) e
+`scripts/build-dxmt-d3d12-spike.sh`.
+
 ### O caso do vídeo
 
 O `scripts/make-test-video.swift` escreve o MP4 quando o teste roda (nada fica no Git): 15 quadros cinza-claro de
