@@ -21,8 +21,6 @@ de testes deste repositório; os "estimados" são avaliação, com o motivo ao l
 
 ## Por dimensão
 
-A linha dos vídeos dos jogos e o total incluem a revisão 5, que ainda não foi publicada; as outras linhas são da revisão 4.
-
 | Dimensão | Peso | CrossOver 26.3 | winhub-engine r5 | % | Tipo |
 |---|---:|---|---|---:|---|
 | Núcleo do Wine, WoW64, Rosetta | 25% | Wine 11.0 + patches da CodeWeavers | a mesma árvore, mais três patches pequenos | 100% | mesmas fontes |

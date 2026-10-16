@@ -21,8 +21,6 @@ is described in [Reverse engineering](reverse-engineering.md); the work list is 
 
 ## By dimension
 
-The game videos row and the total include revision 5, which is not released yet; the other rows are revision 4.
-
 | Dimension | Weight | CrossOver 26.3 | winhub-engine r5 | % | Kind |
 |---|---:|---|---|---:|---|
 | Wine core, WoW64, Rosetta | 25% | Wine 11.0 + CodeWeavers patches | the same tree, plus three small patches | 100% | same sources |
