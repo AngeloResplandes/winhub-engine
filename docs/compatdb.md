@@ -12,7 +12,8 @@ is loaded by `ntdll.so` in every Wine process, right after `ntdll.dll` and befor
    into the bottle;
 4. applies environment variables and command-line additions to child processes (through
    `NtCreateUserProcess`);
-5. with D3DMetal, sends DLSS's `nvngx.dll` to D3DMetal's own copy.
+5. with D3DMetal, sends DLSS's `nvngx.dll` to D3DMetal's own copy;
+6. points `winegstreamer` at the runtime's GStreamer plug-ins (game videos).
 
 ## Environment variables
 
@@ -24,6 +25,8 @@ is loaded by `ntdll.so` in every Wine process, right after `ntdll.dll` and befor
 | `WINHUB_HOME` | WinHub | WinHub's data folder; the downloaded database is `compat/compatdb.json` in it |
 | `WINHUB_COMPAT_RULES` | WinHub | The bottle's own rules file (for example a backend chosen for one game) |
 | `WINHUB_ACTIVE_GRAPHICS_BACKEND`, `CX_ACTIVE_GRAPHICS_BACKEND` | winhubcompat | The backend chosen; the second is read by CodeWeavers' `win32u` |
+| `GST_PLUGIN_SYSTEM_PATH_1_0` | winhubcompat | The runtime's `lib/gstreamer-1.0`, when it exists. A value already set (a bottle's own) is kept |
+| `GST_REGISTRY_1_0` | winhubcompat | GStreamer's plug-in registry, `~/Library/Caches/WinHub/gstreamer/registry-<hash of the runtime path>.x86_64.bin`. A value already set is kept |
 
 To see what it did: `WINEDEBUG=+winhubcompat`. The line `using <backend> as the graphics backend` gives the
 backend of each process.

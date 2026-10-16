@@ -31,9 +31,33 @@ presents 30 frames:
 | NVIDIA extensions (`tests/nvapi-smoke.c`, DXMT) | with `DXMT_ENABLE_NVEXT=1`, `nvapi64` loads, `NvAPI_Initialize` succeeds and `system32\nvngx.dll` opens DXMT's; without it, `NvAPI_Initialize` refuses |
 | `replace_exe_path` | a local rule makes `cmd` start the 64-bit test instead of a 32-bit "launcher"; the trace shows `replacing` and the test passes |
 | `steam_game_id` | `cmd` sets `SteamGameId` in its Windows environment only, as Steam does, and starts the 64-bit test; a local rule matching that id picks DXVK and the test passes |
+| Game video (`tests/mf-smoke.c`) | Media Foundation opens an MP4 and reads it to the end: `OK h264 128x96 frames=15 …` and `OK aac rate=44100 channels=2`; the log shows `winhubcompat` pointing GStreamer at the runtime, and H.264 decoded by `vtdec_hw` (or `vtdec`) and AAC by `atdec` |
 | The bottle | `system32` only has Wine's own `d3d11`, `dxgi`, `d3d10core`, `winemetal` |
 
 `SMOKE_BACKENDS="dxmt"` limits the backends. The CI runs the full test.
+
+### The video case
+
+`scripts/make-test-video.swift` writes the MP4 when the test runs (nothing is stored in Git): 15 light-gray frames at
+128x96 and one second of silent stereo AAC, encoded by macOS's own AVFoundation, so the file does not depend on
+the decoders under test. `tests/mf-smoke.c` reads it with Media Foundation's source reader, and the test checks
+the decoders from the log:
+
+```bash
+GST_DEBUG=WINE:4,GST_ELEMENT_FACTORY:4 wine mf-smoke64.exe 'C:\video.mp4'
+```
+
+`GST_ELEMENT_FACTORY:4` prints `creating element "vtdec_hw"` and `creating element "atdec"`, the factory names;
+`WINE:4` alone only gives long names ("Apple VideoToolbox decoder (hardware only)"). Reading is bounded (1000
+samples) and must reach the end of the stream, so a stuck decoder fails instead of hanging.
+
+Expect two lines on every video open, which are harmless and come from upstream Wine:
+`GStreamer-Video-CRITICAL **: <time>: gst_video_info_from_caps: assertion 'gst_caps_is_fixed (caps)' failed`.
+Decoding is correct; they will also show up in users' logs. An `atdec` drain warning when the reader is released
+after one audio sample is expected too.
+
+The first run scans the plug-ins and writes the registry to `~/Library/Caches/WinHub/gstreamer/`, with the real
+`HOME`; delete the file to see a scan again.
 
 ## Seeing what winhubcompat did
 

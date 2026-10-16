@@ -19,20 +19,25 @@ wine-gecko, que este repositório não compila.
 │   │   └── i386-windows/    DLLs do lado Windows, 32 bits (+ winemetal.dll), rodando pelo WoW64
 │   ├── dxmt/                DXMT v0.80, DLLs builtin: x86_64-windows, i386-windows, x86_64-unix
 │   ├── dxvk/                DXVK 1.10.3, DLLs builtin: x86_64-windows, i386-windows
-│   └── *.dylib              bibliotecas do pacote oficial (MoltenVK, freetype, gnutls, SDL2…)
+│   ├── gstreamer-1.0/       os 14 plug-ins do GStreamer que os vídeos dos jogos precisam (revisão 5)
+│   └── *.dylib              bibliotecas do pacote oficial (MoltenVK, freetype, gnutls, SDL2…) e, a partir
+│                            da revisão 5, as do GLib e do GStreamer (libglib, libgstreamer, libgstvideo…)
 └── share/
     ├── wine/                wine.inf, nls, fontes (nossos) + wine-mono, wine-gecko (pacote oficial)
     └── winhub-engine/       engine.json, compatdb.json (regras embutidas), licenças
 ```
 
 O `share/winhub-engine/engine.json` lista as versões e as `features` que o WinHub confere:
-`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`, `nvext` (revisão 3).
+`dxmt`, `dxvk`, `msync`, `backend-dispatch`, `compatdb`, `nvext` (revisão 3), `gstreamer` (revisão 5; a versão do
+GStreamer também está no `engine.json`).
 
 ## Pipeline de build
 
 ```
 crossover-sources-26.3.0.tar.gz ──► sources/wine + patches/wine ──► build-wine.sh ──► wine-install/
         (CodeWeavers, LGPL)        └─ sources/dxvk + patches/dxvk ──► build-dxvk.sh ──► dxvk-install/
+fontes do crossover (glib, gstreamer) + pcre2 + gvdb ─────────────► build-gstreamer.sh ──► gstreamer-install/
+                                          (antes do build-wine.sh, que liga o winegstreamer a ele)
 DXMT v0.80 (MIT) + patches/dxmt + LLVM 15 ───────────────────────► build-dxmt.sh ──► dxmt-install/
 src/winhubcompat + cJSON ─────────────────────────────────────────► build-winhubcompat.sh
                                                     package.sh ──► dist/ (overlay, fontes, manifestos)
@@ -56,6 +61,20 @@ passo: [Compilação](building.md).
   pacote oficial, e manter o nome de usuário, a pasta de perfil e o link do Desktop do Wine oficial. Veja
   [Patches](patches.md).
 
+## Vídeos dos jogos
+
+Os jogos tocam cenas pelo Media Foundation, que o Wine entrega ao `winegstreamer`, que usa o GStreamer. O pacote
+oficial não tem bibliotecas nem plug-ins do GStreamer, então o motor compila o `winegstreamer.so` e leva o
+GStreamer junto ([`build-gstreamer.sh`](building.md#o-que-o-build-gstreamersh-faz-e-por-quê)):
+
+- **H.264 e AAC são decodificados pelo macOS**: `vtdec` (VideoToolbox, em hardware quando houver) e `atdec`
+  (AudioToolbox), do `applemedia` do gst-plugins-bad. Não há FFmpeg, x264 nem plug-in GPL.
+- `lib/gstreamer-1.0/` tem 14 plug-ins: o demultiplexador de MP4, analisadores, conversores e o bin de reprodução do
+  `decodebin`, além do `applemedia`. O GLib, o GStreamer e as bibliotecas deles ficam em `lib/`, ao lado das do
+  pacote base; eles se acham (e acham a `libintl` do pacote base) por `@rpath`. O `package.sh` escolhe as
+  bibliotecas e os plug-ins pelas dependências do `winegstreamer.so`, em vez de copiar tudo.
+- Só MP4 com H.264 e AAC é coberto. Os outros formatos estão em [Lacunas](gaps.md).
+
 ## winhubcompat
 
 O `ntdll.so` carrega o `lib/wine/x86_64-unix/winhubcompat.so` em todo processo do Wine, depois de mapear o
@@ -73,6 +92,18 @@ O `ntdll.so` carrega o `lib/wine/x86_64-unix/winhubcompat.so` em todo processo d
 
 Ele também define `CX_ACTIVE_GRAPHICS_BACKEND`, lida pelo `win32u` da CodeWeavers. Formato das regras e lista
 completa de variáveis: [winhubcompat e regras de compatibilidade](compatdb.md).
+
+### Os caminhos do GStreamer
+
+Quando o `lib/gstreamer-1.0` existe, o construtor define duas variáveis antes de qualquer outra DLL carregar:
+
+- `GST_PLUGIN_SYSTEM_PATH_1_0`: o `lib/gstreamer-1.0` do próprio motor, para o GStreamer nunca carregar plug-ins
+  de outro lugar do Mac;
+- `GST_REGISTRY_1_0`: o registro de plug-ins, um arquivo em `~/Library/Caches/WinHub/gstreamer/` com nome tirado de
+  um hash do caminho do motor, para motores diferentes e outros GStreamers do Mac não o dividirem.
+
+Elas são definidas no motor, e não pelo WinHub, então um WinHub anterior à revisão 5 toca vídeos sem mudar nada.
+Um valor que já esteja definido (o da própria garrafa) é deixado como está.
 
 ### Como o backend é escolhido
 
@@ -101,7 +132,8 @@ CrossOver.
 
 ## Como o WinHub usa o motor
 
-- Instala o pacote base e o overlay, respeitando o `overlay.replace` (`["bin", "lib/wine"]`).
+- Instala o pacote base e o overlay, respeitando o `overlay.replace`
+  (`["bin", "lib/wine", "lib/gstreamer-1.0"]` a partir da revisão 5).
 - Define `WINHUB_GRAPHICS_BACKEND` pela garrafa, `WINHUB_COMPAT_RULES` como `<garrafa>/compat-rules.json`,
   `WINHUB_HOME`, e as variáveis do D3DMetal quando o usuário apontou um Game Porting Toolkit.
 - Baixa o `data/compatdb.json` deste repositório só quando a assinatura Ed25519 confere.
